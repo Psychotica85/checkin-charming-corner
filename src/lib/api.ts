@@ -2,6 +2,8 @@
 // This is a mock implementation. In a real application, this would connect to your backend API
 // which would then handle the MongoDB operations
 
+import { formatInTimeZone } from 'date-fns-tz';
+
 interface CheckInData {
   firstName?: string;
   lastName?: string;
@@ -18,6 +20,9 @@ interface CheckInData {
 export const submitCheckIn = async (data: CheckInData): Promise<{ success: boolean, message: string }> => {
   console.log('Check-in data submitted:', data);
   
+  // Create timestamp with Berlin timezone
+  const berlinTimestamp = formatInTimeZone(new Date(), 'Europe/Berlin', "yyyy-MM-dd'T'HH:mm:ssXXX");
+  
   // Simulate API call with a delay
   return new Promise((resolve) => {
     setTimeout(() => {
@@ -27,7 +32,8 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
         checkIns.push({
           ...data,
           id: Date.now().toString(),
-          timestamp: new Date().toISOString()
+          timestamp: berlinTimestamp,
+          timezone: 'Europe/Berlin'
         });
         localStorage.setItem('checkIns', JSON.stringify(checkIns));
         
