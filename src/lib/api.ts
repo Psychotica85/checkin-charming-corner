@@ -6,6 +6,7 @@ interface CheckInData {
   fullName: string;
   company: string;
   acceptedRules: boolean;
+  acceptedDocuments?: string[];
   timestamp: Date;
 }
 
@@ -15,7 +16,16 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
   // Simulate API call with a delay
   return new Promise((resolve) => {
     setTimeout(() => {
-      if (data.fullName && data.company && data.acceptedRules) {
+      if (data.fullName && data.company) {
+        // Store the check-in data in localStorage
+        const checkIns = JSON.parse(localStorage.getItem('checkIns') || '[]');
+        checkIns.push({
+          ...data,
+          id: Date.now().toString(),
+          timestamp: new Date().toISOString()
+        });
+        localStorage.setItem('checkIns', JSON.stringify(checkIns));
+        
         resolve({ 
           success: true, 
           message: "Check-in erfolgreich gespeichert. Willkommen!" 
@@ -27,5 +37,17 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
         });
       }
     }, 800);
+  });
+};
+
+export const getCheckIns = async (): Promise<any[]> => {
+  console.log('Fetching check-ins');
+  
+  // Simulate API call with a delay
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const checkIns = JSON.parse(localStorage.getItem('checkIns') || '[]');
+      resolve(checkIns);
+    }, 500);
   });
 };

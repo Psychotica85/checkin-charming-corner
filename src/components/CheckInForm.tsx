@@ -1,16 +1,24 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { submitCheckIn } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import PDFViewer from "./PDFViewer";
 
 interface FormStep {
   title: string;
   description: string;
+}
+
+interface PDFDocument {
+  id: string;
+  name: string;
+  description: string;
+  file: string;
+  createdAt: Date;
 }
 
 const formSteps: FormStep[] = [
@@ -19,8 +27,8 @@ const formSteps: FormStep[] = [
     description: "Bitte geben Sie Ihre persönlichen Daten ein."
   },
   {
-    title: "Verhaltensregeln",
-    description: "Bitte lesen und akzeptieren Sie unsere Verhaltensregeln."
+    title: "Dokumente",
+    description: "Bitte lesen und bestätigen Sie die folgenden Dokumente."
   },
   {
     title: "Bestätigung",
@@ -33,13 +41,28 @@ const CheckInForm = () => {
   const [formData, setFormData] = useState({
     fullName: "",
     company: "",
-    acceptedRules: false,
   });
   const [loading, setLoading] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [documents, setDocuments] = useState<PDFDocument[]>([]);
+  const [acceptedDocuments, setAcceptedDocuments] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Load documents from localStorage
+    const storedDocs = localStorage.getItem("pdfDocuments");
+    if (storedDocs) {
+      setDocuments(JSON.parse(storedDocs));
+    }
+  }, []);
 
   const updateFormData = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAcceptDocument = (documentId: string) => {
+    if (!acceptedDocuments.includes(documentId)) {
+      setAcceptedDocuments(prev => [...prev, documentId]);
+    }
   };
 
   const handleNext = () => {
@@ -48,9 +71,17 @@ const CheckInForm = () => {
       return;
     }
     
-    if (currentStep === 1 && !formData.acceptedRules) {
-      toast.error("Bitte akzeptieren Sie die Verhaltensregeln, um fortzufahren.");
-      return;
+    if (currentStep === 1) {
+      if (documents.length === 0) {
+        // If no documents are uploaded, allow to proceed
+        setCurrentStep(prev => prev + 1);
+        return;
+      }
+      
+      if (acceptedDocuments.length < documents.length) {
+        toast.error("Bitte bestätigen Sie alle Dokumente, um fortzufahren.");
+        return;
+      }
     }
 
     if (currentStep < formSteps.length - 1) {
@@ -71,6 +102,8 @@ const CheckInForm = () => {
     try {
       const result = await submitCheckIn({
         ...formData,
+        acceptedRules: acceptedDocuments.length === documents.length,
+        acceptedDocuments: acceptedDocuments,
         timestamp: new Date()
       });
       
@@ -92,11 +125,13 @@ const CheckInForm = () => {
     setFormData({
       fullName: "",
       company: "",
-      acceptedRules: false,
     });
+    setAcceptedDocuments([]);
     setCurrentStep(0);
     setCompleted(false);
   };
+
+  const areAllDocumentsAccepted = documents.length > 0 && acceptedDocuments.length === documents.length;
 
   if (completed) {
     return (
@@ -169,35 +204,43 @@ const CheckInForm = () => {
 
         {currentStep === 1 && (
           <div className="space-y-4 animate-slide-up">
-            <div className="p-4 bg-muted/50 rounded-lg space-y-4 max-h-60 overflow-y-auto">
-              <h3 className="font-medium">Verhaltensregeln für Besucher</h3>
-              <p className="text-sm text-muted-foreground">
-                1. Besucher müssen sich stets an der Rezeption an- und abmelden.<br/><br/>
-                2. Besucherausweise müssen jederzeit sichtbar getragen werden.<br/><br/>
-                3. Das Fotografieren und Filmen ist ohne ausdrückliche Genehmigung untersagt.<br/><br/>
-                4. Vertrauliche Informationen, die während des Besuchs erlangt werden, sind geheim zu halten.<br/><br/>
-                5. Anweisungen des Sicherheitspersonals sind zu befolgen.<br/><br/>
-                6. Notausgänge und Fluchtwege sind freizuhalten.<br/><br/>
-                7. Im Brandfall sind die gekennzeichneten Fluchtwege zu benutzen.
-              </p>
-            </div>
-
-            <div className="flex items-start space-x-2">
-              <Checkbox 
-                id="acceptRules" 
-                checked={formData.acceptedRules}
-                onCheckedChange={(checked) => 
-                  updateFormData("acceptedRules", checked === true)
-                }
-              />
-              <div className="grid gap-1.5 leading-none">
-                <Label
-                  htmlFor="acceptRules"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Ich habe die Verhaltensregeln gelesen und akzeptiere sie
-                </Label>
+            {documents.length === 0 ? (
+              <div className="p-4 bg-muted/50 rounded-lg text-center">
+                <p className="text-muted-foreground">
+                  Keine Dokumente vorhanden. Der Administrator hat noch keine Dokumente hochgeladen.
+                </p>
               </div>
+            ) : (
+              <div className="space-y-4 max-h-80 overflow-y-auto p-1">
+                {documents.map((doc) => (
+                  <PDFViewer
+                    key={doc.id}
+                    document={doc}
+                    onAccept={handleAcceptDocument}
+                    isAccepted={acceptedDocuments.includes(doc.id)}
+                  />
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center space-x-2 p-4 bg-muted/30 rounded-lg">
+              <div className={cn(
+                "h-6 w-6 rounded-full flex items-center justify-center",
+                areAllDocumentsAccepted 
+                  ? "bg-green-500/10 text-green-500" 
+                  : "bg-muted text-muted-foreground"
+              )}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              </div>
+              <p className="text-sm">
+                {documents.length === 0 
+                  ? "Keine Dokumente zum Bestätigen vorhanden" 
+                  : areAllDocumentsAccepted 
+                    ? "Alle Dokumente wurden bestätigt" 
+                    : `${acceptedDocuments.length} von ${documents.length} Dokumenten bestätigt`}
+              </p>
             </div>
           </div>
         )}
@@ -214,8 +257,14 @@ const CheckInForm = () => {
                 <p className="font-medium">{formData.company}</p>
               </div>
               <div>
-                <h3 className="text-sm text-muted-foreground">Verhaltensregeln</h3>
-                <p className="font-medium">{formData.acceptedRules ? "Akzeptiert" : "Nicht akzeptiert"}</p>
+                <h3 className="text-sm text-muted-foreground">Dokumente</h3>
+                <p className="font-medium">
+                  {documents.length === 0 
+                    ? "Keine Dokumente vorhanden" 
+                    : areAllDocumentsAccepted 
+                      ? "Alle Dokumente bestätigt" 
+                      : `${acceptedDocuments.length} von ${documents.length} Dokumenten bestätigt`}
+                </p>
               </div>
               <div>
                 <h3 className="text-sm text-muted-foreground">Datum & Uhrzeit</h3>

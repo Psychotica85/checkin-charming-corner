@@ -2,6 +2,7 @@
 import CheckInForm from "@/components/CheckInForm";
 import Logo from "@/components/Logo";
 import { Toaster } from "sonner";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   return (
@@ -12,13 +13,21 @@ const Index = () => {
       <header className="w-full py-6 px-4 sm:px-6 glass border-b border-border/50 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Logo />
-          <div className="text-sm text-muted-foreground">
-            {new Date().toLocaleDateString('de-DE', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              {new Date().toLocaleDateString('de-DE', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </div>
+            <Link 
+              to="/admin" 
+              className="text-sm text-primary hover:text-primary/80 transition-colors"
+            >
+              Admin-Bereich
+            </Link>
           </div>
         </div>
       </header>
@@ -42,7 +51,7 @@ const Index = () => {
             <ul className="space-y-3">
               {["Schneller und effizienter Check-In Prozess", 
                 "Datenschutzkonforme Besuchererfassung", 
-                "Digitale Bestätigung der Verhaltensregeln"].map((feature, index) => (
+                "Digitale Bestätigung der Dokumente"].map((feature, index) => (
                 <li key={index} className="flex items-center gap-2">
                   <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-primary">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
