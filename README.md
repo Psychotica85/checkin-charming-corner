@@ -1,69 +1,65 @@
-# Welcome to your Lovable project
 
-## Project info
+# Gäste Check-In System
+
+Ein modernes, digitales Gäste Check-In System für Unternehmen, das es Besuchern ermöglicht, sich anzumelden und Verhaltensregeln zu akzeptieren. Die Daten werden in einer MongoDB-Datenbank gespeichert.
+
+## Projektinfo
 
 **URL**: https://lovable.dev/projects/20474e66-f8a3-41e2-ad41-72ddf7235e8c
 
-## How can I edit this code?
+## Funktionen
 
-There are several ways of editing your application.
+- Digitales Erfassen von Besucherdaten (Name, Unternehmen)
+- Digitale Bestätigung der Verhaltensregeln
+- Datenschutzkonforme Speicherung in MongoDB
+- Responsive Design für alle Geräte
+- Modernes und intuitives Benutzerinterface
 
-**Use Lovable**
+## Technologien
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/20474e66-f8a3-41e2-ad41-72ddf7235e8c) and start prompting.
+- Frontend: React, TypeScript, Tailwind CSS
+- Backend: Node.js, Express
+- Datenbank: MongoDB
+- Styling: Tailwind CSS mit shadcn/ui
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Installation und Start
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Schritt 1: Repository klonen
+git clone <REPOSITORY_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Schritt 2: In das Projektverzeichnis wechseln
+cd <PROJEKT_NAME>
 
-# Step 3: Install the necessary dependencies.
+# Schritt 3: Abhängigkeiten installieren
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Schritt 4: Frontend-Entwicklungsserver starten
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Backend-Setup (für Produktion)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. Erstellen Sie eine `.env`-Datei im Hauptverzeichnis mit den folgenden Inhalten:
+   ```
+   MONGODB_URI=mongodb://username:password@host:port/database
+   PORT=5000
+   ```
 
-**Use GitHub Codespaces**
+2. Starten Sie den Backend-Server:
+   ```sh
+   cd src/backend
+   node server.js
+   ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Hinweise
 
-## What technologies are used for this project?
+- Für die Produktionsumgebung müssen Sie das Frontend mit `npm run build` kompilieren und das Backend separat hosten.
+- Die MongoDB-Verbindung muss für die Produktion konfiguriert werden.
+- Stellen Sie sicher, dass Sie die Datenschutzbestimmungen einhalten, wenn Sie personenbezogene Daten speichern.
 
-This project is built with .
+## Anpassungen
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/20474e66-f8a3-41e2-ad41-72ddf7235e8c) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+- Logo: Ersetzen Sie das Logo in der `Logo.tsx`-Komponente mit Ihrem eigenen Unternehmenslogo.
+- Farben: Passen Sie die Farbpalette in der `tailwind.config.ts`-Datei an Ihr Corporate Design an.
+- Verhaltensregeln: Aktualisieren Sie die Verhaltensregeln in der `CheckInForm.tsx`-Komponente.
