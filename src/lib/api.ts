@@ -3,8 +3,13 @@
 // which would then handle the MongoDB operations
 
 interface CheckInData {
+  firstName?: string;
+  lastName?: string;
   fullName: string;
   company: string;
+  visitReason?: string;
+  visitDate?: Date;
+  visitTime?: string;
   acceptedRules: boolean;
   acceptedDocuments?: string[];
   timestamp: Date;
@@ -16,7 +21,7 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
   // Simulate API call with a delay
   return new Promise((resolve) => {
     setTimeout(() => {
-      if (data.fullName && data.company) {
+      if (data.firstName && data.lastName && data.company && data.visitReason) {
         // Store the check-in data in localStorage
         const checkIns = JSON.parse(localStorage.getItem('checkIns') || '[]');
         checkIns.push({

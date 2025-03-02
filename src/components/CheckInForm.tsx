@@ -3,10 +3,17 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
 import { submitCheckIn } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import PDFViewer from "./PDFViewer";
+import { format } from "date-fns";
+import { de } from "date-fns/locale";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon, Clock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 interface FormStep {
   title: string;
@@ -36,11 +43,30 @@ const formSteps: FormStep[] = [
   }
 ];
 
+// Generate time options every 15 minutes
+const generateTimeOptions = () => {
+  const times = [];
+  for (let hour = 0; hour < 24; hour++) {
+    for (let minute = 0; minute < 60; minute += 15) {
+      const formattedHour = hour.toString().padStart(2, '0');
+      const formattedMinute = minute.toString().padStart(2, '0');
+      times.push(`${formattedHour}:${formattedMinute}`);
+    }
+  }
+  return times;
+};
+
+const timeOptions = generateTimeOptions();
+
 const CheckInForm = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
     company: "",
+    visitReason: "",
+    date: new Date(),
+    time: "08:00",
   });
   const [loading, setLoading] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -66,9 +92,11 @@ const CheckInForm = () => {
   };
 
   const handleNext = () => {
-    if (currentStep === 0 && (!formData.fullName || !formData.company)) {
-      toast.error("Bitte füllen Sie alle Felder aus.");
-      return;
+    if (currentStep === 0) {
+      if (!formData.firstName || !formData.lastName || !formData.company || !formData.visitReason) {
+        toast.error("Bitte füllen Sie alle Felder aus.");
+        return;
+      }
     }
     
     if (currentStep === 1) {
@@ -101,7 +129,13 @@ const CheckInForm = () => {
     setLoading(true);
     try {
       const result = await submitCheckIn({
-        ...formData,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        fullName: `${formData.firstName} ${formData.lastName}`,
+        company: formData.company,
+        visitReason: formData.visitReason,
+        visitDate: formData.date,
+        visitTime: formData.time,
         acceptedRules: acceptedDocuments.length === documents.length,
         acceptedDocuments: acceptedDocuments,
         timestamp: new Date()
@@ -123,8 +157,12 @@ const CheckInForm = () => {
 
   const handleReset = () => {
     setFormData({
-      fullName: "",
+      firstName: "",
+      lastName: "",
       company: "",
+      visitReason: "",
+      date: new Date(),
+      time: "08:00",
     });
     setAcceptedDocuments([]);
     setCurrentStep(0);
@@ -143,7 +181,7 @@ const CheckInForm = () => {
             </svg>
           </div>
           <h2 className="text-2xl font-medium">Check-In erfolgreich</h2>
-          <p className="text-muted-foreground">Vielen Dank, {formData.fullName}! Sie wurden erfolgreich eingecheckt.</p>
+          <p className="text-muted-foreground">Vielen Dank, {formData.firstName}! Sie wurden erfolgreich eingecheckt.</p>
         </div>
         <Button onClick={handleReset} className="w-full">
           Neuer Check-In
@@ -178,15 +216,27 @@ const CheckInForm = () => {
       <div className="space-y-6">
         {currentStep === 0 && (
           <div className="space-y-4 animate-slide-up">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Vollständiger Name</Label>
-              <Input
-                id="fullName"
-                placeholder="Max Mustermann"
-                value={formData.fullName}
-                onChange={(e) => updateFormData("fullName", e.target.value)}
-                required
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">Vorname</Label>
+                <Input
+                  id="firstName"
+                  placeholder="Max"
+                  value={formData.firstName}
+                  onChange={(e) => updateFormData("firstName", e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Nachname</Label>
+                <Input
+                  id="lastName"
+                  placeholder="Mustermann"
+                  value={formData.lastName}
+                  onChange={(e) => updateFormData("lastName", e.target.value)}
+                  required
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -198,6 +248,68 @@ const CheckInForm = () => {
                 onChange={(e) => updateFormData("company", e.target.value)}
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="visitReason">Grund des Besuches</Label>
+              <Textarea
+                id="visitReason"
+                placeholder="Besprechung, Meeting, etc."
+                value={formData.visitReason}
+                onChange={(e) => updateFormData("visitReason", e.target.value)}
+                required
+                className="resize-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="date">Datum</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="date"
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.date ? (
+                        format(formData.date, "PPP", { locale: de })
+                      ) : (
+                        <span>Datum wählen</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.date}
+                      onSelect={(date) => date && updateFormData("date", date)}
+                      initialFocus
+                      locale={de}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="time">Uhrzeit</Label>
+                <Select 
+                  value={formData.time} 
+                  onValueChange={(value) => updateFormData("time", value)}
+                >
+                  <SelectTrigger id="time" className="w-full">
+                    <SelectValue placeholder="Wählen Sie eine Uhrzeit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {timeOptions.map((time) => (
+                      <SelectItem key={time} value={time}>
+                        {time} Uhr
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         )}
@@ -250,11 +362,23 @@ const CheckInForm = () => {
             <div className="p-4 bg-muted/50 rounded-lg space-y-3">
               <div>
                 <h3 className="text-sm text-muted-foreground">Name</h3>
-                <p className="font-medium">{formData.fullName}</p>
+                <p className="font-medium">{formData.firstName} {formData.lastName}</p>
               </div>
               <div>
                 <h3 className="text-sm text-muted-foreground">Unternehmen</h3>
                 <p className="font-medium">{formData.company}</p>
+              </div>
+              <div>
+                <h3 className="text-sm text-muted-foreground">Grund des Besuches</h3>
+                <p className="font-medium">{formData.visitReason}</p>
+              </div>
+              <div>
+                <h3 className="text-sm text-muted-foreground">Besuchsdatum</h3>
+                <p className="font-medium">{format(formData.date, "PPP", { locale: de })}</p>
+              </div>
+              <div>
+                <h3 className="text-sm text-muted-foreground">Besuchszeit</h3>
+                <p className="font-medium">{formData.time} Uhr</p>
               </div>
               <div>
                 <h3 className="text-sm text-muted-foreground">Dokumente</h3>
@@ -265,10 +389,6 @@ const CheckInForm = () => {
                       ? "Alle Dokumente bestätigt" 
                       : `${acceptedDocuments.length} von ${documents.length} Dokumenten bestätigt`}
                 </p>
-              </div>
-              <div>
-                <h3 className="text-sm text-muted-foreground">Datum & Uhrzeit</h3>
-                <p className="font-medium">{new Date().toLocaleString('de-DE')}</p>
               </div>
             </div>
           </div>
