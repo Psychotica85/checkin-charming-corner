@@ -71,7 +71,7 @@ const PDFViewer = ({ document, onAccept, isAccepted }: PDFViewerProps) => {
       <div className="flex-1 overflow-auto p-4 flex justify-center">
         <iframe
           src={document.file}
-          className="w-full max-w-4xl h-full rounded-lg border shadow-lg"
+          className="w-[800px] h-[600px] rounded-lg border shadow-lg"
           title={document.name}
         />
       </div>
