@@ -1,86 +1,132 @@
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { saveDocument, deleteDocument, getDocuments } from "@/lib/api";
 import { toast } from "sonner";
 
 interface PDFDocument {
-  id: string;
+  id?: string;
+  _id?: string;
   name: string;
   description: string;
-  file: string; // Base64 encoded PDF
+  file: string;
   createdAt: Date;
 }
 
 const PDFUploader = () => {
   const [documents, setDocuments] = useState<PDFDocument[]>([]);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+  });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Load documents from localStorage on component mount
+  // Load existing documents
   useEffect(() => {
-    const storedDocs = localStorage.getItem("pdfDocuments");
-    if (storedDocs) {
-      setDocuments(JSON.parse(storedDocs));
-    }
+    const loadDocuments = async () => {
+      try {
+        const docs = await getDocuments();
+        setDocuments(docs);
+      } catch (error) {
+        console.error("Error loading documents:", error);
+        toast.error("Fehler beim Laden der Dokumente");
+      }
+    };
+    
+    loadDocuments();
   }, []);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    const file = e.target.files[0];
-    if (file.type !== "application/pdf") {
-      toast.error("Bitte laden Sie nur PDF-Dateien hoch");
+    if (!selectedFile) {
+      toast.error("Bitte wählen Sie eine PDF-Datei aus");
       return;
     }
-    
-    if (!name.trim()) {
+
+    if (!formData.name) {
       toast.error("Bitte geben Sie einen Namen für das Dokument ein");
       return;
     }
 
-    setLoading(true);
-    
+    setIsUploading(true);
+
     try {
       // Convert file to base64
-      const base64File = await fileToBase64(file);
+      const base64 = await fileToBase64(selectedFile);
       
-      // Create new document
-      const newDocument: PDFDocument = {
-        id: Date.now().toString(),
-        name: name,
-        description: description,
-        file: base64File,
+      // Create document
+      const newDocument = {
+        id: Date.now().toString(), // This will be replaced by MongoDB's _id
+        name: formData.name,
+        description: formData.description,
+        file: base64,
         createdAt: new Date(),
       };
       
-      const updatedDocuments = [...documents, newDocument];
+      // Save to MongoDB via API
+      const success = await saveDocument(newDocument);
       
-      // Save to localStorage
-      localStorage.setItem("pdfDocuments", JSON.stringify(updatedDocuments));
-      setDocuments(updatedDocuments);
-      
-      // Reset form
-      setName("");
-      setDescription("");
-      e.target.value = "";
-      
-      toast.success("Dokument erfolgreich hochgeladen");
+      if (success) {
+        // Refresh documents list
+        const updatedDocs = await getDocuments();
+        setDocuments(updatedDocs);
+        
+        // Reset form
+        setFormData({ name: "", description: "" });
+        setSelectedFile(null);
+        
+        // Show success toast
+        toast.success("Dokument erfolgreich hochgeladen");
+      } else {
+        toast.error("Fehler beim Speichern des Dokuments");
+      }
     } catch (error) {
-      console.error("Upload error:", error);
+      console.error("Error uploading document:", error);
       toast.error("Fehler beim Hochladen des Dokuments");
     } finally {
-      setLoading(false);
+      setIsUploading(false);
     }
   };
 
-  const handleDeleteDocument = (id: string) => {
-    const updatedDocuments = documents.filter(doc => doc.id !== id);
-    localStorage.setItem("pdfDocuments", JSON.stringify(updatedDocuments));
-    setDocuments(updatedDocuments);
-    toast.success("Dokument erfolgreich gelöscht");
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Sind Sie sicher, dass Sie dieses Dokument löschen möchten?")) {
+      return;
+    }
+    
+    setIsDeleting(true);
+    
+    try {
+      await deleteDocument(id);
+      
+      // Refresh documents list
+      const updatedDocs = await getDocuments();
+      setDocuments(updatedDocs);
+      
+      toast.success("Dokument erfolgreich gelöscht");
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      toast.error("Fehler beim Löschen des Dokuments");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const fileToBase64 = (file: File): Promise<string> => {
@@ -88,82 +134,104 @@ const PDFUploader = () => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
+      reader.onerror = (error) => reject(error);
     });
   };
 
   return (
     <div className="space-y-8">
-      <div className="space-y-4">
-        <h2 className="text-xl font-medium">Neues Dokument hochladen</h2>
-        <div className="grid gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Dokumentname</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="z.B. Sicherheitsrichtlinien"
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description">Beschreibung</Label>
-            <Input
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Kurze Beschreibung des Dokuments"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="file">PDF-Datei auswählen</Label>
-            <Input
-              id="file"
-              type="file"
-              accept="application/pdf"
-              onChange={handleFileUpload}
-              disabled={loading}
-              className="cursor-pointer"
-            />
-          </div>
-        </div>
+      <div>
+        <h2 className="text-xl font-semibold mb-2">Dokumente hochladen</h2>
+        <p className="text-muted-foreground">
+          Laden Sie Dokumente hoch, die von Besuchern gelesen und akzeptiert werden müssen.
+        </p>
       </div>
 
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="name">Dokumentname</Label>
+          <Input
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleInputChange}
+            placeholder="z.B. Besucherregeln"
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="description">Beschreibung</Label>
+          <Textarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleInputChange}
+            placeholder="Kurze Beschreibung des Dokuments"
+            className="resize-none"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="pdf">PDF-Datei</Label>
+          <Input
+            id="pdf"
+            type="file"
+            accept="application/pdf"
+            onChange={handleFileChange}
+            className="cursor-pointer"
+            required
+          />
+        </div>
+
+        <Button type="submit" disabled={isUploading}>
+          {isUploading ? "Wird hochgeladen..." : "Dokument hochladen"}
+        </Button>
+      </form>
+
       <div className="space-y-4">
-        <h2 className="text-xl font-medium">Hochgeladene Dokumente</h2>
+        <h3 className="text-lg font-medium">Hochgeladene Dokumente</h3>
+        
         {documents.length === 0 ? (
-          <p className="text-muted-foreground italic">Keine Dokumente vorhanden</p>
+          <p className="text-muted-foreground">Keine Dokumente vorhanden.</p>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {documents.map((doc) => (
-              <div key={doc.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                <div className="space-y-1">
-                  <h3 className="font-medium">{doc.name}</h3>
-                  {doc.description && <p className="text-sm text-muted-foreground">{doc.description}</p>}
+              <Card key={doc.id || doc._id}>
+                <CardHeader>
+                  <CardTitle className="text-base">{doc.name}</CardTitle>
+                  <CardDescription className="text-sm line-clamp-2">
+                    {doc.description || "Keine Beschreibung"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
                   <p className="text-xs text-muted-foreground">
-                    Hochgeladen am {new Date(doc.createdAt).toLocaleDateString('de-DE')}
+                    Hochgeladen am:{" "}
+                    {new Date(doc.createdAt).toLocaleDateString("de-DE", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })}
                   </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button 
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(doc.file, '_blank')}
+                    onClick={() => window.open(doc.file, "_blank")}
                   >
                     Anzeigen
                   </Button>
-                  <Button 
+                  <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => handleDeleteDocument(doc.id)}
+                    onClick={() => handleDelete(doc.id || doc._id || '')}
+                    disabled={isDeleting}
                   >
                     Löschen
                   </Button>
-                </div>
-              </div>
+                </CardFooter>
+              </Card>
             ))}
           </div>
         )}

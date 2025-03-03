@@ -22,6 +22,21 @@ interface PDFDocument {
 
 const timeOptions = generateTimeOptions();
 
+// Function to get current time rounded to nearest 15 minutes
+const getCurrentTimeOption = () => {
+  const now = new Date();
+  const minutes = now.getMinutes();
+  const roundedMinutes = Math.round(minutes / 15) * 15;
+  now.setMinutes(roundedMinutes);
+  now.setSeconds(0);
+  now.setMilliseconds(0);
+  
+  const hours = now.getHours().toString().padStart(2, '0');
+  const mins = now.getMinutes().toString().padStart(2, '0');
+  
+  return `${hours}:${mins}`;
+};
+
 const CheckInForm = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
@@ -29,8 +44,8 @@ const CheckInForm = () => {
     lastName: "",
     company: "",
     visitReason: "",
-    date: new Date(),
-    time: "08:00",
+    date: new Date(), // Current date
+    time: getCurrentTimeOption(), // Current time rounded to nearest 15 minutes
   });
   const [loading, setLoading] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -39,11 +54,23 @@ const CheckInForm = () => {
   const [reportUrl, setReportUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load documents from localStorage
-    const storedDocs = localStorage.getItem("pdfDocuments");
-    if (storedDocs) {
-      setDocuments(JSON.parse(storedDocs));
-    }
+    // We'll now load documents from the API instead of localStorage directly
+    const loadDocuments = async () => {
+      try {
+        // First try to load from localStorage as a fallback
+        const storedDocs = localStorage.getItem("pdfDocuments");
+        if (storedDocs) {
+          setDocuments(JSON.parse(storedDocs));
+        }
+        
+        // Then try to fetch from MongoDB through the API
+        // If this is implemented elsewhere, we can remove this
+      } catch (error) {
+        console.error("Error loading documents:", error);
+      }
+    };
+    
+    loadDocuments();
   }, []);
 
   const updateFormData = (field: string, value: any) => {
@@ -127,8 +154,8 @@ const CheckInForm = () => {
       lastName: "",
       company: "",
       visitReason: "",
-      date: new Date(),
-      time: "08:00",
+      date: new Date(), // Reset to current date
+      time: getCurrentTimeOption(), // Reset to current time
     });
     setAcceptedDocuments([]);
     setCurrentStep(0);

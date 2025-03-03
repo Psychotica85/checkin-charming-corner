@@ -1,90 +1,91 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+interface PDFDocument {
+  id: string;
+  name: string;
+  description: string;
+  file: string;
+  createdAt: Date;
+}
 
 interface PDFViewerProps {
-  document: {
-    id: string;
-    name: string;
-    description?: string;
-    file: string;
-  };
-  onAccept: (documentId: string) => void;
-  isAccepted: boolean;
+  document: PDFDocument;
+  onAccept?: (documentId: string) => void;
+  isAccepted?: boolean;
 }
 
 const PDFViewer = ({ document, onAccept, isAccepted }: PDFViewerProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleOpen = () => {
-    setIsOpen(true);
-  };
-
-  const handleClose = () => {
-    setIsOpen(false);
-  };
+  const [showPDF, setShowPDF] = useState(false);
 
   const handleAccept = () => {
-    onAccept(document.id);
-    setIsOpen(false);
+    if (onAccept) {
+      onAccept(document.id);
+    }
   };
 
-  if (!isOpen) {
-    return (
-      <div className="flex justify-between items-center p-4 bg-muted/50 rounded-lg">
-        <div>
+  return (
+    <div className="rounded-lg border border-border overflow-hidden">
+      {/* Document header */}
+      <div className="flex items-center justify-between p-4 bg-muted/30">
+        <div className="space-y-1">
           <h3 className="font-medium">{document.name}</h3>
           {document.description && (
             <p className="text-sm text-muted-foreground">{document.description}</p>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          {isAccepted && (
-            <span className="text-green-600 flex items-center gap-1">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowPDF(!showPDF)}
+        >
+          {showPDF ? "Ausblenden" : "Anzeigen"}
+        </Button>
+      </div>
+
+      {/* PDF viewer */}
+      {showPDF && (
+        <div className="w-full">
+          <iframe 
+            src={document.file} 
+            className="w-full h-[90vh]" 
+            title={document.name}
+          />
+        </div>
+      )}
+
+      {/* Accept button */}
+      {onAccept && (
+        <div className="p-4 flex justify-between items-center bg-background">
+          <div className="flex items-center">
+            <div
+              className={cn(
+                "h-6 w-6 rounded-full flex items-center justify-center mr-2",
+                isAccepted
+                  ? "bg-green-500/10 text-green-500"
+                  : "bg-muted text-muted-foreground"
+              )}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 6L9 17l-5-5" />
               </svg>
-              Bestätigt
+            </div>
+            <span className="text-sm">
+              {isAccepted ? "Dokument akzeptiert" : "Dokument noch nicht akzeptiert"}
             </span>
-          )}
-          <Button 
-            variant={isAccepted ? "outline" : "default"}
+          </div>
+          <Button
+            onClick={handleAccept}
+            variant="outline"
             size="sm"
-            onClick={handleOpen}
+            disabled={isAccepted}
           >
-            {isAccepted ? "Erneut anzeigen" : "Dokument öffnen"}
+            {isAccepted ? "Akzeptiert" : "Akzeptieren"}
           </Button>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex flex-col">
-      <div className="p-4 bg-background border-b flex justify-between items-center">
-        <h2 className="text-xl font-medium">{document.name}</h2>
-        <Button variant="outline" size="sm" onClick={handleClose}>
-          Schließen
-        </Button>
-      </div>
-      
-      {/* Significantly increased the size of the PDF viewer to show A4 content better */}
-      <div className="flex-1 overflow-auto p-4 flex justify-center items-start">
-        <iframe
-          src={document.file}
-          className="w-full h-[90vh] max-w-5xl min-h-[90vh] rounded-lg border shadow-lg"
-          title={document.name}
-        />
-      </div>
-      
-      <div className="p-4 bg-background border-t flex justify-end gap-2">
-        <Button variant="outline" onClick={handleClose}>
-          Abbrechen
-        </Button>
-        <Button onClick={handleAccept} disabled={isAccepted}>
-          {isAccepted ? "Bereits bestätigt" : "Dokument bestätigen"}
-        </Button>
-      </div>
+      )}
     </div>
   );
 };
