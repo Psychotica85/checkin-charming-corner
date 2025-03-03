@@ -1,4 +1,3 @@
-
 // API interface with MongoDB and email functionality
 import { formatInTimeZone } from 'date-fns-tz';
 import { generateCheckInReport } from './pdfGenerator';
@@ -108,8 +107,8 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
     // Create timestamp with Berlin timezone
     const berlinTimestamp = formatInTimeZone(new Date(), 'Europe/Berlin', "yyyy-MM-dd'T'HH:mm:ssXXX");
     
-    // Get documents from MongoDB - Using exec() for TypeScript compatibility
-    const documents = await DocumentModel.find().lean().exec();
+    // Get documents from MongoDB - Using TypeScript casting to fix type errors
+    const documents = await (DocumentModel.find().lean() as any).exec();
     
     // Generate PDF report
     const pdfBlob = await generateCheckInReport({
@@ -160,7 +159,7 @@ export const getCheckIns = async (): Promise<any[]> => {
   
   try {
     await connectToDatabase();
-    const checkIns = await CheckInModel.find().sort({ timestamp: -1 }).lean().exec();
+    const checkIns = await (CheckInModel.find().sort({ timestamp: -1 }).lean() as any).exec();
     
     // Create object URLs for PDF data
     return checkIns.map(checkIn => {
@@ -185,7 +184,7 @@ export const getCheckIns = async (): Promise<any[]> => {
 export const getDocuments = async () => {
   try {
     await connectToDatabase();
-    return await DocumentModel.find().lean().exec();
+    return await (DocumentModel.find().lean() as any).exec();
   } catch (error) {
     console.error('Error fetching documents:', error);
     
@@ -214,7 +213,7 @@ export const saveDocument = async (document: any) => {
 export const deleteDocument = async (documentId: string) => {
   try {
     await connectToDatabase();
-    await DocumentModel.findByIdAndDelete(documentId).exec();
+    await (DocumentModel.findByIdAndDelete(documentId) as any).exec();
     return true;
   } catch (error) {
     console.error('Error deleting document:', error);
@@ -241,7 +240,7 @@ export const getUsers = async (): Promise<User[]> => {
     await connectToDatabase();
     
     // Check if any users exist
-    const count = await UserModel.countDocuments().exec();
+    const count = await (UserModel.countDocuments() as any).exec();
     
     // If no users exist, create the default admin user
     if (count === 0) {
@@ -265,7 +264,7 @@ export const getUsers = async (): Promise<User[]> => {
     }
     
     // Otherwise, return all users
-    const users = await UserModel.find().lean().exec();
+    const users = await (UserModel.find().lean() as any).exec();
     
     return users.map(user => ({
       id: user._id.toString(),
@@ -302,7 +301,7 @@ export const createUser = async (userData: Omit<User, 'id' | 'createdAt'>): Prom
     await connectToDatabase();
     
     // Check if username already exists
-    const existingUser = await UserModel.findOne({ username: userData.username }).exec();
+    const existingUser = await (UserModel.findOne({ username: userData.username }) as any).exec();
     
     if (existingUser) {
       return { success: false, message: 'Benutzername bereits vergeben' };
@@ -354,10 +353,10 @@ export const updateUser = async (id: string, userData: Partial<Omit<User, 'id' |
     
     // If changing username, check if it's already taken by another user
     if (userData.username) {
-      const existingUser = await UserModel.findOne({ 
+      const existingUser = await (UserModel.findOne({ 
         username: userData.username,
         _id: { $ne: id }
-      }).exec();
+      }) as any).exec();
       
       if (existingUser) {
         return { success: false, message: 'Benutzername bereits vergeben' };
@@ -365,11 +364,11 @@ export const updateUser = async (id: string, userData: Partial<Omit<User, 'id' |
     }
     
     // Update user
-    const updatedUser = await UserModel.findByIdAndUpdate(
+    const updatedUser = await (UserModel.findByIdAndUpdate(
       id,
       { $set: userData },
       { new: true }
-    ).exec();
+    ) as any).exec();
     
     if (!updatedUser) {
       return { success: false, message: 'Benutzer nicht gefunden' };
@@ -420,10 +419,10 @@ export const deleteUser = async (id: string): Promise<{ success: boolean, messag
     await connectToDatabase();
     
     // Get all admin users
-    const adminUsers = await UserModel.find({ role: 'admin' }).lean().exec();
+    const adminUsers = await (UserModel.find({ role: 'admin' }).lean() as any).exec();
     
     // Get the user to delete
-    const userToDelete = await UserModel.findById(id).lean().exec();
+    const userToDelete = await (UserModel.findById(id).lean() as any).exec();
     
     if (!userToDelete) {
       return { success: false, message: 'Benutzer nicht gefunden' };
@@ -435,7 +434,7 @@ export const deleteUser = async (id: string): Promise<{ success: boolean, messag
     }
     
     // Delete the user
-    await UserModel.findByIdAndDelete(id).exec();
+    await (UserModel.findByIdAndDelete(id) as any).exec();
     
     return { success: true, message: 'Benutzer erfolgreich gelöscht' };
   } catch (error) {
@@ -473,10 +472,10 @@ export const authenticateUser = async (username: string, password: string): Prom
     await connectToDatabase();
     
     // Find user by username and password
-    const user = await UserModel.findOne({ 
+    const user = await (UserModel.findOne({ 
       username: username,
       password: password 
-    }).lean().exec();
+    }).lean() as any).exec();
     
     if (!user) {
       return { success: false, message: 'Ungültiger Benutzername oder Passwort' };
