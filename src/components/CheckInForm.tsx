@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { submitCheckIn } from "@/lib/api";
 
-// Import our new components
+// Import our components
 import StepIndicator from "./check-in/StepIndicator";
 import PersonalInfoStep from "./check-in/PersonalInfoStep";
 import DocumentsStep from "./check-in/DocumentsStep";
@@ -36,6 +36,7 @@ const CheckInForm = () => {
   const [completed, setCompleted] = useState(false);
   const [documents, setDocuments] = useState<PDFDocument[]>([]);
   const [acceptedDocuments, setAcceptedDocuments] = useState<string[]>([]);
+  const [reportUrl, setReportUrl] = useState<string | null>(null);
 
   useEffect(() => {
     // Load documents from localStorage
@@ -107,6 +108,7 @@ const CheckInForm = () => {
       
       if (result.success) {
         setCompleted(true);
+        setReportUrl(result.reportUrl || null);
         toast.success(result.message);
       } else {
         toast.error(result.message);
@@ -131,10 +133,17 @@ const CheckInForm = () => {
     setAcceptedDocuments([]);
     setCurrentStep(0);
     setCompleted(false);
+    setReportUrl(null);
   };
 
   if (completed) {
-    return <SuccessView firstName={formData.firstName} onReset={handleReset} />;
+    return (
+      <SuccessView 
+        firstName={formData.firstName} 
+        onReset={handleReset}
+        reportUrl={reportUrl}
+      />
+    );
   }
 
   return (

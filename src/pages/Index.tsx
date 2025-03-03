@@ -34,21 +34,22 @@ const Index = () => {
 
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center justify-center p-6">
-        <div className="max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 items-center">
-          <div className="space-y-6 animate-slide-down">
-            <div className="space-y-2">
-              <div className="text-sm font-medium text-primary px-3 py-1 bg-primary/10 rounded-full w-fit">
+        <div className="max-w-2xl w-full mx-auto flex flex-col gap-10 items-center">
+          {/* Welcome section - now above the form */}
+          <div className="space-y-6 animate-slide-down w-full">
+            <div className="space-y-2 text-center">
+              <div className="text-sm font-medium text-primary px-3 py-1 bg-primary/10 rounded-full w-fit mx-auto">
                 Willkommen
               </div>
               <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
                 Digitaler Gäste Check-In
               </h1>
-              <p className="text-lg text-muted-foreground max-w-md">
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                 Wir freuen uns, Sie in unserem Unternehmen begrüßen zu dürfen. Bitte füllen Sie das Formular aus, um Ihren Besuch zu registrieren.
               </p>
             </div>
             
-            <ul className="space-y-3">
+            <ul className="space-y-3 max-w-md mx-auto">
               {["Schneller und effizienter Check-In Prozess", 
                 "Datenschutzkonforme Besuchererfassung", 
                 "Digitale Bestätigung der Dokumente"].map((feature, index) => (
@@ -64,6 +65,7 @@ const Index = () => {
             </ul>
           </div>
           
+          {/* Check-in form - now below the welcome section with full width */}
           <CheckInForm />
         </div>
       </main>
