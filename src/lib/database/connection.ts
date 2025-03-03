@@ -28,13 +28,12 @@ export const connectToDatabase = async (): Promise<void> => {
 
 /**
  * Helper to handle MongoDB queries with TypeScript
- * This helps solve the TypeScript calling issues with Mongoose
+ * This solves TypeScript calling issues with Mongoose
  */
-export const executeQuery = async <T>(queryFn: () => mongoose.Query<any, any>): Promise<T> => {
+export const executeQuery = async <T>(queryFn: () => Promise<T>): Promise<T> => {
   try {
     await connectToDatabase();
-    const query = queryFn();
-    return await query.exec() as unknown as T;
+    return await queryFn();
   } catch (error) {
     console.error('MongoDB query error:', error);
     throw error;

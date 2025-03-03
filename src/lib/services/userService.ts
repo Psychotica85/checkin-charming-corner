@@ -1,4 +1,4 @@
-import { UserModel, User } from '../database/models';
+import { UserModel, User, IUser } from '../database/models';
 import { connectToDatabase } from '../database/connection';
 
 export const getUsers = async (): Promise<User[]> => {
@@ -30,9 +30,10 @@ export const getUsers = async (): Promise<User[]> => {
     }
     
     // Otherwise, return all users
-    const users = await UserModel.find().lean().exec();
+    // Lösung für TypeScript-Fehler mit 'as any'
+    const users = await (UserModel.find().lean() as any).exec();
     
-    return users.map(user => ({
+    return users.map((user: any) => ({
       id: user._id.toString(),
       username: user.username,
       password: user.password,
@@ -67,7 +68,8 @@ export const createUser = async (userData: Omit<User, 'id' | 'createdAt'>): Prom
     await connectToDatabase();
     
     // Check if username already exists
-    const existingUser = await UserModel.findOne({ username: userData.username }).exec();
+    // Lösung für TypeScript-Fehler mit 'as any'
+    const existingUser = await (UserModel.findOne({ username: userData.username }) as any).exec();
     
     if (existingUser) {
       return { success: false, message: 'Benutzername bereits vergeben' };
@@ -119,10 +121,11 @@ export const updateUser = async (id: string, userData: Partial<Omit<User, 'id' |
     
     // If changing username, check if it's already taken by another user
     if (userData.username) {
-      const existingUser = await UserModel.findOne({ 
+      // Lösung für TypeScript-Fehler mit 'as any'
+      const existingUser = await (UserModel.findOne({ 
         username: userData.username,
         _id: { $ne: id }
-      }).exec();
+      }) as any).exec();
       
       if (existingUser) {
         return { success: false, message: 'Benutzername bereits vergeben' };
@@ -130,11 +133,12 @@ export const updateUser = async (id: string, userData: Partial<Omit<User, 'id' |
     }
     
     // Update user
-    const updatedUser = await UserModel.findByIdAndUpdate(
+    // Lösung für TypeScript-Fehler mit 'as any'
+    const updatedUser = await (UserModel.findByIdAndUpdate(
       id,
       { $set: userData },
       { new: true }
-    ).exec();
+    ) as any).exec();
     
     if (!updatedUser) {
       return { success: false, message: 'Benutzer nicht gefunden' };
@@ -185,10 +189,12 @@ export const deleteUser = async (id: string): Promise<{ success: boolean, messag
     await connectToDatabase();
     
     // Get all admin users
-    const adminUsers = await UserModel.find({ role: 'admin' }).lean().exec();
+    // Lösung für TypeScript-Fehler mit 'as any'
+    const adminUsers = await (UserModel.find({ role: 'admin' }).lean() as any).exec();
     
     // Get the user to delete
-    const userToDelete = await UserModel.findById(id).lean().exec();
+    // Lösung für TypeScript-Fehler mit 'as any'
+    const userToDelete = await (UserModel.findById(id).lean() as any).exec();
     
     if (!userToDelete) {
       return { success: false, message: 'Benutzer nicht gefunden' };
@@ -200,7 +206,8 @@ export const deleteUser = async (id: string): Promise<{ success: boolean, messag
     }
     
     // Delete the user
-    await UserModel.findByIdAndDelete(id).exec();
+    // Lösung für TypeScript-Fehler mit 'as any'
+    await (UserModel.findByIdAndDelete(id) as any).exec();
     
     return { success: true, message: 'Benutzer erfolgreich gelöscht' };
   } catch (error) {
@@ -238,10 +245,11 @@ export const authenticateUser = async (username: string, password: string): Prom
     await connectToDatabase();
     
     // Find user by username and password
-    const user = await UserModel.findOne({ 
+    // Lösung für TypeScript-Fehler mit 'as any'
+    const user = await (UserModel.findOne({ 
       username: username,
       password: password 
-    }).lean().exec();
+    }).lean() as any).exec();
     
     if (!user) {
       return { success: false, message: 'Ungültiger Benutzername oder Passwort' };

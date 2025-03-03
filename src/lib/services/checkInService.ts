@@ -1,6 +1,6 @@
 
 import { formatInTimeZone } from 'date-fns-tz';
-import { CheckInModel, CheckInData } from '../database/models';
+import { CheckInModel, CheckInData, ICheckIn } from '../database/models';
 import { connectToDatabase } from '../database/connection';
 import { generateCheckInReport } from '../pdfGenerator';
 import { getDocuments } from './documentService';
@@ -66,10 +66,11 @@ export const getCheckIns = async (): Promise<any[]> => {
   
   try {
     await connectToDatabase();
-    const checkIns = await CheckInModel.find().sort({ timestamp: -1 }).lean().exec();
+    // Lösung für TypeScript-Fehler mit 'as any'
+    const checkIns = await (CheckInModel.find().sort({ timestamp: -1 }).lean() as any).exec();
     
     // Create object URLs for PDF data
-    return checkIns.map(checkIn => {
+    return checkIns.map((checkIn: any) => {
       const { pdfData, ...rest } = checkIn;
       
       // If we have PDF data, create a blob URL for it
