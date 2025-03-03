@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { submitCheckIn } from "@/lib/api";
+import { getDocuments } from "@/lib/services/documentService";
 
 // Import our components
 import StepIndicator from "./check-in/StepIndicator";
@@ -54,19 +55,20 @@ const CheckInForm = () => {
   const [reportUrl, setReportUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    // We'll now load documents from the API instead of localStorage directly
+    // Load documents from the API
     const loadDocuments = async () => {
       try {
-        // First try to load from localStorage as a fallback
+        const docs = await getDocuments();
+        if (docs && docs.length > 0) {
+          setDocuments(docs);
+        }
+      } catch (error) {
+        console.error("Error loading documents:", error);
+        // Try to load from localStorage as fallback
         const storedDocs = localStorage.getItem("pdfDocuments");
         if (storedDocs) {
           setDocuments(JSON.parse(storedDocs));
         }
-        
-        // Then try to fetch from MongoDB through the API
-        // If this is implemented elsewhere, we can remove this
-      } catch (error) {
-        console.error("Error loading documents:", error);
       }
     };
     
