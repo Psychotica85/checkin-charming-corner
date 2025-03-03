@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +40,7 @@ const Admin = () => {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    role: "user" as const
+    role: "user" as "admin" | "user"  // Fix: explicitly type this as "admin" | "user"
   });
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

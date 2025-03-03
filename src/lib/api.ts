@@ -1,4 +1,3 @@
-
 // API interface with MongoDB and email functionality
 import { formatInTimeZone } from 'date-fns-tz';
 import { generateCheckInReport } from './pdfGenerator';
