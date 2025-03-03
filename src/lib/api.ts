@@ -1,3 +1,4 @@
+
 // API interface with MongoDB and email functionality
 import { formatInTimeZone } from 'date-fns-tz';
 import { generateCheckInReport } from './pdfGenerator';
@@ -19,7 +20,11 @@ const connectToDatabase = async () => {
   if (isConnected) return;
   
   try {
-    await mongoose.connect(MONGODB_URI);
+    // MongoDB 7 compatibility options
+    await mongoose.connect(MONGODB_URI, {
+      // MongoDB 7 requires a more robust connection approach
+      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+    });
     isConnected = true;
     console.log('Connected to MongoDB');
   } catch (error) {
@@ -42,13 +47,13 @@ const CheckInSchema = new mongoose.Schema({
   timestamp: Date,
   timezone: String,
   reportUrl: String,
-  pdfData: Buffer
+  pdfData: Buffer // Store PDF as Buffer type for binary data
 });
 
 const DocumentSchema = new mongoose.Schema({
   name: String,
   description: String,
-  file: String,
+  file: String, // Base64 encoded PDF string
   createdAt: {
     type: Date,
     default: Date.now
@@ -103,7 +108,7 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
     // Create timestamp with Berlin timezone
     const berlinTimestamp = formatInTimeZone(new Date(), 'Europe/Berlin', "yyyy-MM-dd'T'HH:mm:ssXXX");
     
-    // Get documents from MongoDB - Using exec() to fix TypeScript error
+    // Get documents from MongoDB - Using exec() for TypeScript compatibility
     const documents = await DocumentModel.find().lean().exec();
     
     // Generate PDF report
