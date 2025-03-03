@@ -39,11 +39,11 @@ const SuccessView = ({ firstName, onReset, reportUrl }: SuccessViewProps) => {
               </svg>
               Bestätigung als PDF öffnen
             </a>
-            {/* Increased the height of the PDF preview */}
+            {/* Drastically increased the height of the PDF preview (3x taller) */}
             <div className="w-full rounded-lg overflow-hidden border shadow-md mt-2">
               <iframe 
                 src={reportUrl} 
-                className="w-full h-[500px]" 
+                className="w-full h-[900px]" 
                 title="Check-In Bestätigung"
               />
             </div>

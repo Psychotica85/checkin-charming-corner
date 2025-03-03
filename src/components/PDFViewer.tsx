@@ -68,11 +68,11 @@ const PDFViewer = ({ document, onAccept, isAccepted }: PDFViewerProps) => {
         </Button>
       </div>
       
-      {/* Increased the size of the PDF viewer to show A4 content better */}
+      {/* Significantly increased the size of the PDF viewer to show A4 content better */}
       <div className="flex-1 overflow-auto p-4 flex justify-center items-start">
         <iframe
           src={document.file}
-          className="w-full h-[85vh] max-w-5xl min-h-[85vh] rounded-lg border shadow-lg"
+          className="w-full h-[90vh] max-w-5xl min-h-[90vh] rounded-lg border shadow-lg"
           title={document.name}
         />
       </div>

@@ -13,6 +13,7 @@ import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Link } from "react-router-dom";
 
 interface User {
   id: string;
@@ -271,6 +272,15 @@ const Admin = () => {
           <div className="max-w-7xl mx-auto flex justify-between items-center">
             <Logo />
             <div className="flex items-center gap-4">
+              <Button variant="outline" asChild>
+                <Link to="/">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                  </svg>
+                  Zur Startseite
+                </Link>
+              </Button>
               <span className="text-sm text-muted-foreground">
                 Angemeldet als {currentUser?.username || 'Admin'}
               </span>
