@@ -48,7 +48,7 @@ const CheckInSchema = new mongoose.Schema({
 const DocumentSchema = new mongoose.Schema({
   name: String,
   description: String,
-  file: String, // Base64 encoded PDF
+  file: String,
   createdAt: {
     type: Date,
     default: Date.now
