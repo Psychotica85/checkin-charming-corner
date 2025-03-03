@@ -32,12 +32,12 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Main content */}
+      {/* Main content - Increased max-width here */}
       <main className="flex-1 flex flex-col items-center justify-center p-6">
-        <div className="max-w-4xl w-full mx-auto flex flex-col gap-16 items-center">
+        <div className="max-w-6xl w-full mx-auto flex flex-col gap-24 items-center">
           {/* Welcome section - above the form with full width and better spacing */}
-          <div className="space-y-8 animate-slide-down w-full">
-            <div className="space-y-3 text-center">
+          <div className="space-y-8 animate-slide-down w-full pt-8">
+            <div className="space-y-4 text-center">
               <div className="text-sm font-medium text-primary px-3 py-1 bg-primary/10 rounded-full w-fit mx-auto">
                 Willkommen
               </div>
@@ -65,8 +65,8 @@ const Index = () => {
             </ul>
           </div>
           
-          {/* Check-in form - wider for desktop and tablet */}
-          <div className="w-full max-w-xl">
+          {/* Check-in form - Increased max-width and added margin */}
+          <div className="w-full max-w-3xl">
             <CheckInForm />
           </div>
         </div>

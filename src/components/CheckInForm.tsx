@@ -147,7 +147,7 @@ const CheckInForm = () => {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto px-6 py-8 glass rounded-2xl space-y-6 animate-fade-in">
+    <div className="w-full px-6 py-8 glass rounded-2xl space-y-6 animate-fade-in">
       {/* Progress indicator */}
       <StepIndicator steps={formSteps} currentStep={currentStep} />
 

@@ -57,8 +57,9 @@ export const generateCheckInReport = async (data: CheckInData, documents: any[])
       data.acceptedDocuments.includes(doc.id)
     );
     
-    acceptedDocs.forEach((doc, index) => {
-      doc.text(`${index + 1}. ${doc.name}`, 20, yPosition);
+    // Fix: Use `doc.text` instead of referring to document objects incorrectly
+    acceptedDocs.forEach((document, index) => {
+      doc.text(`${index + 1}. ${document.name}`, 20, yPosition);
       yPosition += 7;
     });
   }

@@ -28,7 +28,7 @@ const DocumentsStep = ({ documents, acceptedDocuments, onAcceptDocument }: Docum
           </p>
         </div>
       ) : (
-        <div className="space-y-4 max-h-80 overflow-y-auto p-1">
+        <div className="space-y-4 max-h-96 overflow-y-auto p-1">
           {documents.map((doc) => (
             <PDFViewer
               key={doc.id}

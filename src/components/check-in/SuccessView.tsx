@@ -9,7 +9,7 @@ interface SuccessViewProps {
 
 const SuccessView = ({ firstName, onReset, reportUrl }: SuccessViewProps) => {
   return (
-    <div className="w-full max-w-md mx-auto px-6 py-8 glass rounded-2xl space-y-6 animate-fade-in">
+    <div className="w-full px-6 py-8 glass rounded-2xl space-y-6 animate-fade-in">
       <div className="text-center space-y-2">
         <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -23,7 +23,7 @@ const SuccessView = ({ firstName, onReset, reportUrl }: SuccessViewProps) => {
       {reportUrl && (
         <div className="flex flex-col items-center gap-4">
           <p className="text-sm text-muted-foreground">Ihre Bestätigung wurde erstellt:</p>
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center w-full">
             <a 
               href={reportUrl}
               target="_blank"
@@ -39,10 +39,11 @@ const SuccessView = ({ firstName, onReset, reportUrl }: SuccessViewProps) => {
               </svg>
               Bestätigung als PDF öffnen
             </a>
+            {/* Increased the height of the PDF preview */}
             <div className="w-full rounded-lg overflow-hidden border shadow-md mt-2">
               <iframe 
                 src={reportUrl} 
-                className="w-full h-[300px]" 
+                className="w-full h-[500px]" 
                 title="Check-In Bestätigung"
               />
             </div>
