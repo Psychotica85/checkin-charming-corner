@@ -34,17 +34,17 @@ const Index = () => {
 
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center justify-center p-6">
-        <div className="max-w-2xl w-full mx-auto flex flex-col gap-10 items-center">
-          {/* Welcome section - now above the form */}
-          <div className="space-y-6 animate-slide-down w-full">
-            <div className="space-y-2 text-center">
+        <div className="max-w-4xl w-full mx-auto flex flex-col gap-16 items-center">
+          {/* Welcome section - above the form with full width and better spacing */}
+          <div className="space-y-8 animate-slide-down w-full">
+            <div className="space-y-3 text-center">
               <div className="text-sm font-medium text-primary px-3 py-1 bg-primary/10 rounded-full w-fit mx-auto">
                 Willkommen
               </div>
               <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
                 Digitaler Gäste Check-In
               </h1>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
                 Wir freuen uns, Sie in unserem Unternehmen begrüßen zu dürfen. Bitte füllen Sie das Formular aus, um Ihren Besuch zu registrieren.
               </p>
             </div>
@@ -65,8 +65,10 @@ const Index = () => {
             </ul>
           </div>
           
-          {/* Check-in form - now below the welcome section with full width */}
-          <CheckInForm />
+          {/* Check-in form - wider for desktop and tablet */}
+          <div className="w-full max-w-xl">
+            <CheckInForm />
+          </div>
         </div>
       </main>
 

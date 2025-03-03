@@ -68,10 +68,10 @@ const PDFViewer = ({ document, onAccept, isAccepted }: PDFViewerProps) => {
         </Button>
       </div>
       
-      <div className="flex-1 overflow-auto p-4 flex justify-center">
+      <div className="flex-1 overflow-auto p-4 flex justify-center items-center">
         <iframe
           src={document.file}
-          className="w-[800px] h-[600px] rounded-lg border shadow-lg"
+          className="w-full h-full max-w-4xl min-h-[80vh] rounded-lg border shadow-lg"
           title={document.name}
         />
       </div>

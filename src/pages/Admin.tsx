@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface User {
   id: string;
   username: string;
-  role: 'admin' | 'user';
+  password?: string;
+  role: "admin" | "user";
   createdAt: string;
 }
 
@@ -36,7 +36,7 @@ const Admin = () => {
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [newUser, setNewUser] = useState({
+  const [formData, setFormData] = useState({
     username: "",
     password: "",
     role: "user" as const
@@ -131,14 +131,14 @@ const Admin = () => {
   const handleOpenUserDialog = (user?: User) => {
     if (user) {
       setSelectedUser(user);
-      setNewUser({
+      setFormData({
         username: user.username,
         password: "",
         role: user.role
       });
     } else {
       setSelectedUser(null);
-      setNewUser({
+      setFormData({
         username: "",
         password: "",
         role: "user"
@@ -160,12 +160,12 @@ const Admin = () => {
   };
 
   const handleCreateOrUpdateUser = async () => {
-    if (!newUser.username) {
+    if (!formData.username) {
       toast.error("Benutzername ist erforderlich");
       return;
     }
 
-    if (!selectedUser && !newUser.password) {
+    if (!selectedUser && !formData.password) {
       toast.error("Passwort ist erforderlich");
       return;
     }
@@ -177,19 +177,19 @@ const Admin = () => {
       if (selectedUser) {
         // Update existing user
         const updateData: any = {
-          username: newUser.username,
-          role: newUser.role
+          username: formData.username,
+          role: formData.role
         };
         
         // Only include password if it's provided
-        if (newUser.password) {
-          updateData.password = newUser.password;
+        if (formData.password) {
+          updateData.password = formData.password;
         }
         
         result = await updateUser(selectedUser.id, updateData);
       } else {
         // Create new user
-        result = await createUser(newUser);
+        result = await createUser(formData);
       }
       
       if (result.success) {
@@ -494,8 +494,8 @@ const Admin = () => {
                 <Label htmlFor="username">Benutzername</Label>
                 <Input
                   id="username"
-                  value={newUser.username}
-                  onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                  value={formData.username}
+                  onChange={(e) => setFormData({...formData, username: e.target.value})}
                   placeholder="Benutzername eingeben"
                 />
               </div>
@@ -506,8 +506,8 @@ const Admin = () => {
                 <Input
                   id="password"
                   type="password"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
                   placeholder="Passwort eingeben"
                   required={!selectedUser}
                 />
@@ -515,10 +515,10 @@ const Admin = () => {
               <div className="space-y-2">
                 <Label htmlFor="role">Rolle</Label>
                 <Select
-                  value={newUser.role}
-                  onValueChange={(value) => setNewUser({...newUser, role: value as 'admin' | 'user'})}
+                  value={formData.role}
+                  onValueChange={(value: "admin" | "user") => setFormData({ ...formData, role: value })}
                 >
-                  <SelectTrigger id="role">
+                  <SelectTrigger>
                     <SelectValue placeholder="Rolle auswählen" />
                   </SelectTrigger>
                   <SelectContent>

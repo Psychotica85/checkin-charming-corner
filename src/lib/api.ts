@@ -28,10 +28,10 @@ interface CheckInData {
 export const submitCheckIn = async (data: CheckInData): Promise<{ success: boolean, message: string, reportUrl?: string }> => {
   console.log('Check-in data submitted:', data);
   
-  // Create timestamp with Berlin timezone
-  const berlinTimestamp = formatInTimeZone(new Date(), 'Europe/Berlin', "yyyy-MM-dd'T'HH:mm:ssXXX");
-  
   try {
+    // Create timestamp with Berlin timezone
+    const berlinTimestamp = formatInTimeZone(new Date(), 'Europe/Berlin', "yyyy-MM-dd'T'HH:mm:ssXXX");
+    
     // Get documents from localStorage (this would come from MongoDB in production)
     const documents = JSON.parse(localStorage.getItem('pdfDocuments') || '[]');
     
