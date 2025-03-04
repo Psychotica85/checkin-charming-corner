@@ -5,16 +5,17 @@ import { cn } from "@/lib/utils";
 import { PDFDocument } from "@/lib/database/models";
 
 interface PDFViewerProps {
-  document: PDFDocument;
+  document?: PDFDocument;
+  url?: string;
   onAccept?: (documentId: string) => void;
   isAccepted?: boolean;
 }
 
-const PDFViewer = ({ document, onAccept, isAccepted }: PDFViewerProps) => {
+const PDFViewer = ({ document, url, onAccept, isAccepted }: PDFViewerProps) => {
   const [showPDF, setShowPDF] = useState(false);
 
   const handleAccept = () => {
-    if (onAccept) {
+    if (onAccept && document) {
       onAccept(document.id);
     }
   };
@@ -59,38 +60,48 @@ const PDFViewer = ({ document, onAccept, isAccepted }: PDFViewerProps) => {
     }
   };
 
+  // Bestimme die anzuzeigende URL (entweder direkt übergeben oder aus document)
+  const pdfUrl = url || (document ? getPdfUrl(document.file) : '');
+
+  // Wenn weder url noch document vorhanden ist, nichts anzeigen
+  if (!pdfUrl) {
+    return <div>Keine PDF-Daten verfügbar</div>;
+  }
+
   return (
     <div className="rounded-lg border border-border overflow-hidden">
       {/* Document header */}
-      <div className="flex items-center justify-between p-4 bg-muted/30">
-        <div className="space-y-1">
-          <h3 className="font-medium">{document.name}</h3>
-          {document.description && (
-            <p className="text-sm text-muted-foreground">{document.description}</p>
-          )}
+      {document && (
+        <div className="flex items-center justify-between p-4 bg-muted/30">
+          <div className="space-y-1">
+            <h3 className="font-medium">{document.name}</h3>
+            {document.description && (
+              <p className="text-sm text-muted-foreground">{document.description}</p>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowPDF(!showPDF)}
+          >
+            {showPDF ? "Ausblenden" : "Anzeigen"}
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowPDF(!showPDF)}
-        >
-          {showPDF ? "Ausblenden" : "Anzeigen"}
-        </Button>
-      </div>
+      )}
 
       {/* PDF viewer */}
-      {showPDF && (
+      {(showPDF || !document) && (
         <div className="w-full">
           <iframe 
-            src={getPdfUrl(document.file)} 
+            src={pdfUrl} 
             className="w-full h-[90vh]" 
-            title={document.name}
+            title={document?.name || "PDF Dokument"}
           />
         </div>
       )}
 
       {/* Accept button */}
-      {onAccept && (
+      {onAccept && document && (
         <div className="p-4 flex justify-between items-center bg-background">
           <div className="flex items-center">
             <div

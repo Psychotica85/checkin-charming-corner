@@ -8,19 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "sonner";
 import { getCheckIns, deleteCheckIn, generatePdfReport } from '@/lib/api';
 import PDFViewer from './PDFViewer';
-
-interface CheckIn {
-  id: string;
-  firstName: string;
-  lastName: string;
-  fullName: string;
-  company: string;
-  visitReason: string;
-  visitDate: string;
-  visitTime: string;
-  timestamp: string;
-  acceptedRules: boolean;
-}
+import { CheckIn } from '@/lib/database/models';
 
 const CheckInTable = () => {
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);

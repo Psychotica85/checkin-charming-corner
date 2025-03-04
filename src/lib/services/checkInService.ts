@@ -4,7 +4,7 @@ import { CheckIn } from '../database/models';
 import { withDatabase } from '../database/connection';
 import { generateCheckInReport } from '../pdfGenerator';
 import { getDocuments } from './documentService';
-import { sendEmailWithPDF } from './emailService';
+import { sendEmailWithPDF } from './emailService'; // Korrigierter Import
 import { getCompanySettings } from './companySettingsService';
 
 // Browser-Erkennung

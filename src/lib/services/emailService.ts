@@ -57,6 +57,58 @@ Der Besucherausweis wurde dem Besucher ausgestellt.
   }
 };
 
+// Funktion, die in checkInService.ts verwendet wird
+export const sendEmailWithPDF = async (
+  subject: string,
+  pdfBase64: string,
+  filename: string,
+  visitorName: string,
+  company: string,
+  visitReason: string
+): Promise<boolean> => {
+  try {
+    // Base64-Daten in Buffer umwandeln
+    const matches = pdfBase64.match(/^data:(.+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      throw new Error('Ungültiges PDF-Format');
+    }
+    const pdfBuffer = Buffer.from(matches[2], 'base64');
+
+    // Mail-Optionen konfigurieren
+    const mailOptions = {
+      from: SMTP_FROM,
+      to: SMTP_TO,
+      subject: subject,
+      text: `
+Sehr geehrte Damen und Herren,
+
+ein neuer Besucher hat sich angemeldet:
+
+Name: ${visitorName}
+Firma: ${company}
+Grund des Besuchs: ${visitReason}
+
+Der Besucherausweis wurde dem Besucher ausgestellt.
+      `,
+      attachments: [
+        {
+          filename: filename,
+          content: pdfBuffer,
+          contentType: 'application/pdf'
+        }
+      ]
+    };
+
+    // E-Mail senden
+    const info = await transporter.sendMail(mailOptions);
+    console.log('E-Mail gesendet:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('Fehler beim Senden der E-Mail:', error);
+    return false;
+  }
+};
+
 // Teste SMTP-Verbindung
 export const testSMTPConnection = async (): Promise<boolean> => {
   try {
