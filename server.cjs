@@ -1,14 +1,9 @@
 
-import express from 'express';
-import path from 'path';
-import dotenv from 'dotenv';
-import cors from 'cors';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-
-// ES Module-Fix für __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const express = require('express');
+const path = require('path');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const fs = require('fs');
 
 // Lade Umgebungsvariablen
 dotenv.config();

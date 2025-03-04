@@ -46,4 +46,4 @@ ENV VITE_ADMIN_PASSWORD=admin
 EXPOSE 3000
 
 # Anwendung direkt starten ohne Shell-Skript
-CMD ["/bin/sh", "-c", "node server.js"]
+CMD ["/bin/sh", "-c", "node server.cjs"]
