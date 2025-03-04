@@ -6,15 +6,11 @@ const isBrowser = typeof window !== 'undefined';
 
 // Standard-Admin aus Umgebungsvariablen oder Standardwerte
 const getAdminCredentials = () => {
-  // Verwende import.meta.env für Browser und setze Standardwerte
-  const username = isBrowser ? 
-    (import.meta.env?.VITE_ADMIN_USERNAME || 'admin') : 
-    'admin';
-    
-  const password = isBrowser ? 
-    (import.meta.env?.VITE_ADMIN_PASSWORD || 'admin') : 
-    'admin';
-    
+  // Verwende Standardwerte für Admin-Anmeldedaten
+  const username = 'admin';
+  const password = 'admin';
+  
+  console.log("Admin-Anmeldedaten konfiguriert:", { username });
   return { username, password };
 };
 
@@ -22,12 +18,14 @@ export const authenticateUser = async (username: string, password: string): Prom
   try {
     const adminCredentials = getAdminCredentials();
     
-    console.log('Authentifizierung mit:', { 
-      provided: { username, password }, 
+    console.log('Authentifizierungsversuch:', { 
+      provided: { username }, 
       expected: { username: adminCredentials.username }
     });
     
-    if (username === adminCredentials.username && password === adminCredentials.password) {
+    // Vergleiche Anmeldedaten case-insensitive
+    if (username.toLowerCase() === adminCredentials.username.toLowerCase() && 
+        password === adminCredentials.password) {
       // Erfolgreiche Anmeldung als Admin
       const adminUser: Omit<User, 'password'> = {
         id: '1',
@@ -36,12 +34,16 @@ export const authenticateUser = async (username: string, password: string): Prom
         createdAt: new Date().toISOString()
       };
       
+      console.log('Anmeldung erfolgreich:', { username });
+      
       return { 
         success: true, 
         message: 'Anmeldung erfolgreich', 
         user: adminUser
       };
     }
+    
+    console.log('Anmeldung fehlgeschlagen für:', { username });
     
     return { 
       success: false, 

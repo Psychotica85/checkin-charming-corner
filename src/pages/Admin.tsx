@@ -19,6 +19,7 @@ const Admin = () => {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
 
@@ -33,25 +34,34 @@ const Admin = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    
     try {
       console.log("Login attempt with:", username); // Debug log
+      
       const result = await authenticateUser(username, password);
+      console.log("Login result:", result);
+      
       if (result.success) {
         setIsAuthenticated(true);
         localStorage.setItem("isAuthenticated", "true");
+        localStorage.setItem("authUser", JSON.stringify(result.user));
         toast.success("Login erfolgreich");
       } else {
-        toast.error("Ungültige Anmeldedaten");
+        toast.error(result.message || "Ungültige Anmeldedaten");
       }
     } catch (error) {
       console.error("Login error:", error);
       toast.error("Anmeldung fehlgeschlagen");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("authUser");
     navigate("/");
   };
 
@@ -101,7 +111,9 @@ const Admin = () => {
                   required
                 />
               </div>
-              <Button type="submit">Anmelden</Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Anmeldung..." : "Anmelden"}
+              </Button>
             </form>
           </Card>
         ) : (
