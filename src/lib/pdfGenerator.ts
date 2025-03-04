@@ -95,7 +95,7 @@ export const generateCheckInReport = async (data: CheckInData, documents: any[],
   } else {
     // Use the maximum height between logo and address for positioning the title
     // Add more spacing (15 units) to move the title further down
-    yPosition = Math.max(20 + addressHeight, yPosition) + 15;
+    yPosition = Math.max(20 + addressHeight, yPosition) + 40;
   }
   
   // Add title
