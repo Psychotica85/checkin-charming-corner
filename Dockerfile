@@ -26,13 +26,13 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 # SMTP-Konfiguration (standardmäßig leer, wird in docker-compose.yml überschrieben)
-ENV VITE_SMTP_HOST=
-ENV VITE_SMTP_PORT=587
-ENV VITE_SMTP_USER=
-ENV VITE_SMTP_PASS=
-ENV VITE_SMTP_FROM=
-ENV VITE_SMTP_TO=
-ENV VITE_SMTP_SUBJECT=Neuer Besucher Check-In
+ENV VITE_SMTP_HOST=""
+ENV VITE_SMTP_PORT="587"
+ENV VITE_SMTP_USER=""
+ENV VITE_SMTP_PASS=""
+ENV VITE_SMTP_FROM=""
+ENV VITE_SMTP_TO=""
+ENV VITE_SMTP_SUBJECT="Neuer Besucher Check-In"
 
 # Standard-Anmeldedaten für Admin-Bereich
 ENV VITE_ADMIN_USERNAME=admin
