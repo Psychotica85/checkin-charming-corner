@@ -1,46 +1,46 @@
 
 import { User } from '../../database/models';
-import { mapMongoRoleToFrontendRole, withDatabase } from './utils';
-import { getUserModel } from '../../database/mongoModels';
+import { mapDatabaseRoleToFrontendRole, withDatabase } from './utils';
 
 export const getUsers = async (): Promise<User[]> => {
   return withDatabase(
     // Datenbankoperation
-    async () => {
-      const UserModel = getUserModel();
-      const count = await UserModel.countDocuments().lean().exec();
+    (db) => {
+      const users = db.prepare(`SELECT * FROM users`).all();
       
-      // Wenn keine Benutzer existieren, Standard-Admin-Benutzer erstellen
-      if (count === 0) {
-        const defaultAdmin = await new UserModel({
+      // Standard-Admin-Benutzer erstellen, wenn keine Benutzer existieren
+      if (!users || users.length === 0) {
+        const defaultAdmin = {
           username: 'admin',
-          password: 'admin', // In Produktion wäre dies gehasht
+          password: 'admin',
           role: 'ADMIN',
-          createdAt: new Date()
-        }).save();
+          createdAt: new Date().toISOString()
+        };
+        
+        const result = db.prepare(`
+          INSERT INTO users (username, password, role, createdAt)
+          VALUES (?, ?, ?, ?)
+        `).run(defaultAdmin.username, defaultAdmin.password, defaultAdmin.role, defaultAdmin.createdAt);
         
         return [{
-          id: defaultAdmin._id.toString(),
+          id: result.lastInsertRowid.toString(),
           username: defaultAdmin.username,
           password: defaultAdmin.password,
-          role: mapMongoRoleToFrontendRole(defaultAdmin.role),
-          createdAt: defaultAdmin.createdAt.toISOString()
+          role: mapDatabaseRoleToFrontendRole(defaultAdmin.role as 'ADMIN'),
+          createdAt: defaultAdmin.createdAt
         }];
       }
       
-      // Sonst alle Benutzer zurückgeben
-      const users = await UserModel.find().lean().exec();
-      
       return users.map(user => ({
-        id: user._id.toString(),
+        id: user.id.toString(),
         username: user.username,
         password: user.password,
-        role: mapMongoRoleToFrontendRole(user.role),
-        createdAt: user.createdAt.toISOString()
+        role: mapDatabaseRoleToFrontendRole(user.role as 'ADMIN' | 'USER'),
+        createdAt: user.createdAt
       }));
     },
     // Fallback-Operation (localStorage)
-    async () => {
+    () => {
       const users = JSON.parse(localStorage.getItem('users') || '[]');
       
       // Wenn keine Benutzer existieren, Standard-Admin-Benutzer erstellen

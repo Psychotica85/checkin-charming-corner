@@ -9,7 +9,7 @@ Eine moderne Webanwendung für Besucher-Check-ins mit Dokumentenverwaltung und a
 - Upload und Akzeptanz von PDF-Dokumenten
 - Automatische PDF-Berichtgenerierung für jeden Check-in
 - Admin-Portal mit Benutzerverwaltung
-- PostgreSQL-Integration für Datenspeicherung
+- SQLite-Integration für zuverlässige Datenspeicherung ohne externe Abhängigkeiten
 - Responsives Design für alle Geräte
 
 ## Umgebungsvariablen
@@ -18,7 +18,6 @@ Die Anwendung verwendet folgende Umgebungsvariablen:
 
 | Variable | Beschreibung | Format | Beispiel |
 |----------|-------------|--------|---------|
-| `DATABASE_URL` | PostgreSQL-Verbindungs-URL | postgresql://[username:password@]host[:port]/database | postgresql://postgres:postgres@localhost:5432/checkin |
 | `VITE_SMTP_HOST` | SMTP-Server-Hostname | string | smtp.example.com |
 | `VITE_SMTP_PORT` | SMTP-Server-Port | number | 587 |
 | `VITE_SMTP_USER` | SMTP-Benutzername | string | user@example.com |
@@ -34,25 +33,20 @@ Die Anwendung verwendet folgende Umgebungsvariablen:
 npm install
 ```
 3. Eine `.env`-Datei im Root-Verzeichnis mit den oben aufgelisteten Umgebungsvariablen erstellen
-4. Prisma-Datenbank initialisieren:
-```bash
-npx prisma migrate dev --name init
-```
-5. Entwicklungsserver starten:
+4. Entwicklungsserver starten:
 ```bash
 npm run dev
 ```
 
-## PostgreSQL Setup
+## SQLite-Setup
 
-Die Anwendung benötigt PostgreSQL 12 oder höher. Stellen Sie sicher, dass:
+Die Anwendung verwendet SQLite für die Datenspeicherung, was keine zusätzliche Installation erfordert:
 
-1. Sie eine PostgreSQL-Datenbank mit dem Namen 'checkin' erstellen (oder Ihrem bevorzugten Namen)
-2. Sie die `DATABASE_URL`-Umgebungsvariable auf Ihre PostgreSQL-Instanz setzen
-3. Die Anwendung erstellt automatisch die erforderlichen Tabellen beim ersten Start:
-   - `Document` - Speichert PDF-Dokumente für Besucher zum Akzeptieren
-   - `CheckIn` - Speichert Besucher-Check-in-Daten
-   - `User` - Speichert Admin-Benutzerkonten
+1. Die SQLite-Datenbank wird automatisch im `data/`-Verzeichnis erstellt
+2. Alle erforderlichen Tabellen werden beim ersten Start automatisch erstellt:
+   - `users` - Speichert Benutzerkonten und Rollen
+   - `documents` - Speichert PDF-Dokumente für Besucher zum Akzeptieren
+   - `checkIns` - Speichert Besucher-Check-in-Daten
 
 ## Standard-Login
 
@@ -81,7 +75,7 @@ Die Anwendung kann einfach mit Docker und Docker Compose deployed werden:
 docker-compose up -d
 ```
 
-Dies wird die Anwendung und eine PostgreSQL-Datenbank starten. Die Anwendung ist dann unter http://localhost:8080 verfügbar.
+Dies wird die Anwendung mit der integrierten SQLite-Datenbank starten. Die SQLite-Datenbank wird auf einem Docker-Volume gespeichert, um Datenpersistenz zu gewährleisten. Die Anwendung ist dann unter http://localhost:8080 verfügbar.
 
 ## Lizenz
 

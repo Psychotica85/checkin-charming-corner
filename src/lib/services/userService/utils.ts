@@ -1,34 +1,14 @@
 
-import { connectToDatabase } from '../../database/connection';
+import { connectToDatabase, withDatabase } from '../../database/connection';
 
 // Browser-Erkennung
 const isBrowser = typeof window !== 'undefined';
 
 // Rollenzuordnungs-Hilfsfunktionen
-export const mapMongoRoleToFrontendRole = (role: 'ADMIN' | 'USER'): 'admin' | 'user' => {
+export const mapDatabaseRoleToFrontendRole = (role: 'ADMIN' | 'USER'): 'admin' | 'user' => {
   return role === 'ADMIN' ? 'admin' : 'user';
 };
 
-export const mapFrontendRoleToMongoRole = (role: 'admin' | 'user'): 'ADMIN' | 'USER' => {
+export const mapFrontendRoleToDatabaseRole = (role: 'admin' | 'user'): 'ADMIN' | 'USER' => {
   return role === 'admin' ? 'ADMIN' : 'USER';
-};
-
-// Hilfsfunktion zur Sicherstellung der Datenbankverbindung
-export const withDatabase = async <T>(
-  operation: () => Promise<T>, 
-  fallback: () => Promise<T>
-): Promise<T> => {
-  // Im Browser immer Fallback verwenden
-  if (isBrowser) {
-    console.log('Browser-Umgebung erkannt, verwende localStorage-Fallback');
-    return fallback();
-  }
-  
-  try {
-    await connectToDatabase();
-    return await operation();
-  } catch (error) {
-    console.error('Datenbankoperationsfehler:', error);
-    return fallback();
-  }
 };

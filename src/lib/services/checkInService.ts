@@ -1,10 +1,9 @@
 
 import { formatInTimeZone } from 'date-fns-tz';
 import { CheckInData, ICheckIn } from '../database/models';
-import { connectToDatabase } from '../database/connection';
+import { withDatabase } from '../database/connection';
 import { generateCheckInReport } from '../pdfGenerator';
 import { getDocuments } from './documentService';
-import { getCheckInModel } from '../database/mongoModels';
 
 // Browser-Erkennung
 const isBrowser = typeof window !== 'undefined';
@@ -13,12 +12,10 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
   console.log('Check-in data submitted:', data);
   
   try {
-    await connectToDatabase();
-    
     // Zeitstempel mit Berliner Zeitzone erstellen
     const berlinTimestamp = formatInTimeZone(new Date(), 'Europe/Berlin', "yyyy-MM-dd'T'HH:mm:ssXXX");
     
-    // Dokumente aus der Datenbank abrufen
+    // Dokumente abrufen
     const documents = await getDocuments();
     
     // PDF-Bericht generieren
@@ -33,60 +30,68 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
       timestamp: new Date(berlinTimestamp)
     }, documents);
     
-    // Blob in Buffer für Datenbankablage konvertieren
+    // Blob in ArrayBuffer für Datenbankablage konvertieren
     const arrayBuffer = await pdfBlob.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
     
-    // Im Browser simulieren wir nur die Speicherung in localStorage
-    if (isBrowser) {
-      console.log('Browser-Umgebung: Check-in wird im localStorage gespeichert.');
-      
-      const checkIns = JSON.parse(localStorage.getItem('checkIns') || '[]');
-      const newCheckIn = {
-        id: Date.now().toString(),
-        ...data,
-        timezone: 'Europe/Berlin',
-        timestamp: new Date(berlinTimestamp)
-      };
-      checkIns.push(newCheckIn);
-      localStorage.setItem('checkIns', JSON.stringify(checkIns));
-      
-      // URL für PDF-Vorschau im Browser erstellen
-      const pdfUrl = URL.createObjectURL(pdfBlob);
-      
-      return { 
-        success: true, 
-        message: "Check-in erfolgreich gespeichert. Willkommen!",
-        reportUrl: pdfUrl
-      };
-    }
-    
-    // In MongoDB speichern
-    const CheckInModel = getCheckInModel();
-      
-    await new CheckInModel({
-      firstName: data.firstName,
-      lastName: data.lastName,
-      fullName: data.fullName,
-      company: data.company,
-      visitReason: data.visitReason,
-      visitDate: data.visitDate,
-      visitTime: data.visitTime,
-      acceptedRules: data.acceptedRules,
-      acceptedDocuments: data.acceptedDocuments || [],
-      timestamp: new Date(berlinTimestamp),
-      timezone: 'Europe/Berlin',
-      pdfData: buffer
-    }).save();
-    
-    // URL für PDF-Vorschau im Browser erstellen
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    
-    return { 
-      success: true, 
-      message: "Check-in erfolgreich gespeichert. Willkommen!",
-      reportUrl: pdfUrl
-    };
+    return withDatabase(
+      // SQLite-Datenbankoperation
+      (db) => {
+        // JSON-Array für acceptedDocuments serialisieren
+        const acceptedDocsJson = JSON.stringify(data.acceptedDocuments || []);
+        
+        // Check-in in SQLite speichern
+        const result = db.prepare(`
+          INSERT INTO checkIns (
+            firstName, lastName, fullName, company, visitReason, 
+            visitDate, visitTime, acceptedRules, acceptedDocuments, 
+            timestamp, timezone, pdfData
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          data.firstName || '',
+          data.lastName || '',
+          data.fullName,
+          data.company,
+          data.visitReason || '',
+          data.visitDate ? data.visitDate.toISOString() : null,
+          data.visitTime || '',
+          data.acceptedRules ? 1 : 0,
+          acceptedDocsJson,
+          new Date(berlinTimestamp).toISOString(),
+          'Europe/Berlin',
+          Buffer.from(arrayBuffer)
+        );
+        
+        // URL für PDF-Vorschau im Browser erstellen
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        
+        return { 
+          success: true, 
+          message: "Check-in erfolgreich gespeichert. Willkommen!",
+          reportUrl: pdfUrl
+        };
+      },
+      // Fallback zu localStorage im Browser
+      () => {
+        const checkIns = JSON.parse(localStorage.getItem('checkIns') || '[]');
+        const newCheckIn = {
+          id: Date.now().toString(),
+          ...data,
+          timezone: 'Europe/Berlin',
+          timestamp: new Date(berlinTimestamp)
+        };
+        checkIns.push(newCheckIn);
+        localStorage.setItem('checkIns', JSON.stringify(checkIns));
+        
+        // URL für PDF-Vorschau im Browser erstellen
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        
+        return { 
+          success: true, 
+          message: "Check-in erfolgreich gespeichert. Willkommen!",
+          reportUrl: pdfUrl
+        };
+      }
+    );
   } catch (error) {
     console.error('Error processing check-in:', error);
     return {
@@ -96,41 +101,54 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
   }
 };
 
-export const getCheckIns = async (): Promise<any[]> => {
-  console.log('Fetching check-ins from database');
-  
-  try {
-    await connectToDatabase();
-    
-    // Im Browser verwenden wir den lokalen Speicher
-    if (isBrowser) {
+export const getCheckIns = async (): Promise<ICheckIn[]> => {
+  return withDatabase(
+    // SQLite-Datenbankoperation
+    (db) => {
+      const checkIns = db.prepare(`
+        SELECT * FROM checkIns ORDER BY timestamp DESC
+      `).all();
+      
+      // Zu Frontend-Format konvertieren
+      return checkIns.map(checkIn => {
+        // PDF-Daten in Blob umwandeln
+        let reportUrl = null;
+        if (checkIn.pdfData) {
+          const blob = new Blob([Buffer.from(checkIn.pdfData)], { type: 'application/pdf' });
+          reportUrl = URL.createObjectURL(blob);
+        }
+        
+        // Umwandeln des acceptedDocuments-JSON-Strings zurück in ein Array
+        const acceptedDocuments = checkIn.acceptedDocuments ? 
+          JSON.parse(checkIn.acceptedDocuments) : [];
+        
+        // Konvertieren von SQLite-Boolean (0/1) in JavaScript-Boolean für acceptedRules
+        const acceptedRules = checkIn.acceptedRules === 1;
+        
+        // Konvertieren des Datums
+        const visitDate = checkIn.visitDate ? new Date(checkIn.visitDate) : new Date();
+        
+        return { 
+          id: checkIn.id.toString(),
+          firstName: checkIn.firstName || '',
+          lastName: checkIn.lastName || '',
+          fullName: checkIn.fullName,
+          company: checkIn.company,
+          visitReason: checkIn.visitReason || '',
+          visitDate,
+          visitTime: checkIn.visitTime || '',
+          acceptedRules,
+          acceptedDocuments,
+          timestamp: new Date(checkIn.timestamp),
+          timezone: checkIn.timezone,
+          reportUrl
+        };
+      });
+    },
+    // Fallback zu localStorage im Browser
+    () => {
       const checkIns = JSON.parse(localStorage.getItem('checkIns') || '[]');
       return checkIns;
     }
-    
-    // Aus MongoDB abrufen
-    const CheckInModel = getCheckInModel();
-    const checkIns = await CheckInModel.find().sort({ timestamp: -1 }).lean().exec();
-    
-    // Zu Frontend-Format konvertieren
-    return checkIns.map(checkIn => {
-      const { pdfData, _id, ...rest } = checkIn;
-      
-      // Wenn wir PDF-Daten haben, eine Blob-URL dafür erstellen
-      let reportUrl = null;
-      if (pdfData) {
-        const blob = new Blob([Buffer.from(pdfData)], { type: 'application/pdf' });
-        reportUrl = URL.createObjectURL(blob);
-      }
-      
-      return { 
-        id: _id.toString(),
-        ...rest, 
-        reportUrl 
-      };
-    });
-  } catch (error) {
-    console.error('Error fetching check-ins:', error);
-    return [];
-  }
+  );
 };

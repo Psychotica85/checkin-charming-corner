@@ -1,20 +1,15 @@
 
 import { User } from '../../database/models';
-import { mapMongoRoleToFrontendRole, withDatabase } from './utils';
-import { getUserModel } from '../../database/mongoModels';
-import { getUsers } from './getUsers';
+import { mapDatabaseRoleToFrontendRole, withDatabase } from './utils';
 
 export const authenticateUser = async (username: string, password: string): Promise<{ success: boolean, message: string, user?: Omit<User, 'password'> }> => {
   return withDatabase(
     // Database operation
-    async () => {
-      const UserModel = getUserModel();
-      
+    (db) => {
       // Find user by username and password
-      const user = await UserModel.findOne({ 
-        username,
-        password 
-      }).lean().exec();
+      const user = db.prepare(`
+        SELECT * FROM users WHERE username = ? AND password = ?
+      `).get(username, password);
       
       if (!user) {
         return { success: false, message: 'Ungültiger Benutzername oder Passwort' };
@@ -25,18 +20,18 @@ export const authenticateUser = async (username: string, password: string): Prom
         success: true, 
         message: 'Anmeldung erfolgreich', 
         user: {
-          id: user._id.toString(),
+          id: user.id.toString(),
           username: user.username,
-          role: mapMongoRoleToFrontendRole(user.role),
-          createdAt: user.createdAt.toISOString()
+          role: mapDatabaseRoleToFrontendRole(user.role as 'ADMIN' | 'USER'),
+          createdAt: user.createdAt
         }
       };
     },
     // Fallback operation (localStorage)
-    async () => {
+    () => {
       try {
-        const users = await getUsers();
-        const user = users.find(user => user.username === username && user.password === password);
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const user = users.find((user: User) => user.username === username && user.password === password);
         
         if (!user) {
           return { success: false, message: 'Ungültiger Benutzername oder Passwort' };

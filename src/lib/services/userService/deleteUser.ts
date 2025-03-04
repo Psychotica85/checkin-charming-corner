@@ -1,19 +1,19 @@
 
 import { withDatabase } from './utils';
-import { getUserModel } from '../../database/mongoModels';
-import { getUsers } from './getUsers';
 
 export const deleteUser = async (id: string): Promise<{ success: boolean, message: string }> => {
   return withDatabase(
     // Database operation
-    async () => {
-      const UserModel = getUserModel();
-      
+    (db) => {
       // Get all admin users
-      const adminUsers = await UserModel.find({ role: 'ADMIN' }).lean().exec();
+      const adminUsers = db.prepare(`
+        SELECT * FROM users WHERE role = 'ADMIN'
+      `).all();
       
       // Get the user to delete
-      const userToDelete = await UserModel.findById(id).lean().exec();
+      const userToDelete = db.prepare(`
+        SELECT * FROM users WHERE id = ?
+      `).get(id);
       
       if (!userToDelete) {
         return { success: false, message: 'Benutzer nicht gefunden' };
@@ -25,18 +25,20 @@ export const deleteUser = async (id: string): Promise<{ success: boolean, messag
       }
       
       // Delete the user
-      await UserModel.findByIdAndDelete(id);
+      db.prepare(`
+        DELETE FROM users WHERE id = ?
+      `).run(id);
       
       return { success: true, message: 'Benutzer erfolgreich gelöscht' };
     },
     // Fallback operation (localStorage)
-    async () => {
+    () => {
       try {
-        const users = await getUsers();
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
         
         // Prevent deleting the last admin user
-        const admins = users.filter(user => user.role === 'admin');
-        const userToDelete = users.find(user => user.id === id);
+        const admins = users.filter((user: any) => user.role === 'admin');
+        const userToDelete = users.find((user: any) => user.id === id);
         
         if (!userToDelete) {
           return { success: false, message: 'Benutzer nicht gefunden' };
@@ -46,7 +48,7 @@ export const deleteUser = async (id: string): Promise<{ success: boolean, messag
           return { success: false, message: 'Der letzte Admin-Benutzer kann nicht gelöscht werden' };
         }
         
-        const updatedUsers = users.filter(user => user.id !== id);
+        const updatedUsers = users.filter((user: any) => user.id !== id);
         localStorage.setItem('users', JSON.stringify(updatedUsers));
         
         return { success: true, message: 'Benutzer erfolgreich gelöscht' };

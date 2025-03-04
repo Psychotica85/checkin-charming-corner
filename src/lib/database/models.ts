@@ -18,9 +18,7 @@ export interface Document {
   createdAt: string;
 }
 
-export interface PDFDocument extends Document {
-  createdAt: string;
-}
+export type PDFDocument = Document;
 
 export type CheckInData = {
   firstName: string;
