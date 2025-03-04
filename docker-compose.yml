@@ -7,7 +7,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - VITE_MONGODB_URI=mongodb://mongodb:27017/checkin
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/checkin
       - VITE_SMTP_HOST=smtp.example.com
       - VITE_SMTP_PORT=587
       - VITE_SMTP_USER=user
@@ -15,14 +15,18 @@ services:
       - VITE_SMTP_FROM=no-reply@example.com
       - VITE_SMTP_TO=admin@example.com
     depends_on:
-      - mongodb
+      - postgres
 
-  mongodb:
-    image: mongo:latest
+  postgres:
+    image: postgres:latest
     ports:
-      - "27017:27017"
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: checkin
     volumes:
-      - mongodb_data:/data/db
+      - postgres_data:/var/lib/postgresql/data
 
 volumes:
-  mongodb_data:
+  postgres_data:

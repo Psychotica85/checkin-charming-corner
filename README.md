@@ -1,74 +1,88 @@
 
 # Digital Check-In System
 
-A modern web application for visitor check-in with document acceptance and PDF report generation.
+Eine moderne Webanwendung für Besucher-Check-ins mit Dokumentenverwaltung und automatischer PDF-Berichtgenerierung.
 
 ## Features
 
-- Digital check-in for visitors
-- PDF document upload and acceptance
-- Automatic PDF report generation for each check-in
-- Admin portal with user management
-- MongoDB integration for data storage
-- Responsive design for all devices
+- Digitaler Check-in für Besucher
+- Upload und Akzeptanz von PDF-Dokumenten
+- Automatische PDF-Berichtgenerierung für jeden Check-in
+- Admin-Portal mit Benutzerverwaltung
+- PostgreSQL-Integration für Datenspeicherung
+- Responsives Design für alle Geräte
 
-## Environment Variables
+## Umgebungsvariablen
 
-The application uses the following environment variables:
+Die Anwendung verwendet folgende Umgebungsvariablen:
 
-| Variable | Description | Format | Example |
+| Variable | Beschreibung | Format | Beispiel |
 |----------|-------------|--------|---------|
-| `VITE_MONGODB_URI` | MongoDB connection URI | mongodb://[username:password@]host[:port]/database | mongodb://localhost:27017/checkin |
-| `VITE_SMTP_HOST` | SMTP server hostname | string | smtp.example.com |
-| `VITE_SMTP_PORT` | SMTP server port | number | 587 |
-| `VITE_SMTP_USER` | SMTP username | string | user@example.com |
-| `VITE_SMTP_PASS` | SMTP password | string | password123 |
-| `VITE_SMTP_FROM` | Email sender address | email | noreply@example.com |
-| `VITE_SMTP_TO` | Email recipient address | email | admin@example.com |
+| `DATABASE_URL` | PostgreSQL-Verbindungs-URL | postgresql://[username:password@]host[:port]/database | postgresql://postgres:postgres@localhost:5432/checkin |
+| `VITE_SMTP_HOST` | SMTP-Server-Hostname | string | smtp.example.com |
+| `VITE_SMTP_PORT` | SMTP-Server-Port | number | 587 |
+| `VITE_SMTP_USER` | SMTP-Benutzername | string | user@example.com |
+| `VITE_SMTP_PASS` | SMTP-Passwort | string | password123 |
+| `VITE_SMTP_FROM` | E-Mail-Absenderadresse | email | noreply@example.com |
+| `VITE_SMTP_TO` | E-Mail-Empfängeradresse | email | admin@example.com |
 
 ## Installation
 
-1. Clone the repository
-2. Install dependencies:
+1. Repository klonen
+2. Dependencies installieren:
 ```bash
 npm install
 ```
-3. Create a `.env` file in the root directory with the environment variables listed above
-4. Start the development server:
+3. Eine `.env`-Datei im Root-Verzeichnis mit den oben aufgelisteten Umgebungsvariablen erstellen
+4. Prisma-Datenbank initialisieren:
+```bash
+npx prisma migrate dev --name init
+```
+5. Entwicklungsserver starten:
 ```bash
 npm run dev
 ```
 
-## MongoDB Setup
+## PostgreSQL Setup
 
-The application requires MongoDB 4.4 or higher. Make sure to:
+Die Anwendung benötigt PostgreSQL 12 oder höher. Stellen Sie sicher, dass:
 
-1. Create a MongoDB database named 'checkin' (or your preferred name)
-2. Set the `VITE_MONGODB_URI` environment variable to point to your MongoDB instance
-3. The application will automatically create the necessary collections:
-   - `checkins` - Stores visitor check-in data
-   - `documents` - Stores PDF documents for visitors to accept 
-   - `users` - Stores admin user accounts
+1. Sie eine PostgreSQL-Datenbank mit dem Namen 'checkin' erstellen (oder Ihrem bevorzugten Namen)
+2. Sie die `DATABASE_URL`-Umgebungsvariable auf Ihre PostgreSQL-Instanz setzen
+3. Die Anwendung erstellt automatisch die erforderlichen Tabellen beim ersten Start:
+   - `Document` - Speichert PDF-Dokumente für Besucher zum Akzeptieren
+   - `CheckIn` - Speichert Besucher-Check-in-Daten
+   - `User` - Speichert Admin-Benutzerkonten
 
-## Default Login
+## Standard-Login
 
-The system creates a default admin user on first run:
-- **Username:** admin
-- **Password:** admin
+Das System erstellt beim ersten Start einen Standard-Admin-Benutzer:
+- **Benutzername:** admin
+- **Passwort:** admin
 
-*Important: Change this password immediately after first login.*
+*Wichtig: Ändern Sie dieses Passwort sofort nach dem ersten Login.*
 
 ## Deployment
 
-For production deployment:
+Für das Produktions-Deployment:
 
-1. Build the application:
+1. Anwendung bauen:
 ```bash
 npm run build
 ```
-2. Deploy the build folder to your web server
-3. Make sure to set all the required environment variables in your production environment
+2. Den Build-Ordner auf Ihren Webserver deployen
+3. Stellen Sie sicher, dass alle erforderlichen Umgebungsvariablen in Ihrer Produktionsumgebung gesetzt sind
 
-## License
+## Docker-Deployment
 
-This project is licensed under the MIT License.
+Die Anwendung kann einfach mit Docker und Docker Compose deployed werden:
+
+```bash
+docker-compose up -d
+```
+
+Dies wird die Anwendung und eine PostgreSQL-Datenbank starten. Die Anwendung ist dann unter http://localhost:8080 verfügbar.
+
+## Lizenz
+
+Dieses Projekt ist unter der MIT-Lizenz lizenziert.

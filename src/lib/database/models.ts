@@ -1,16 +1,21 @@
 
-import mongoose, { Document } from 'mongoose';
+import { Document as PrismaDocument, CheckIn as PrismaCheckIn, User as PrismaUser, Role } from '@prisma/client';
 
-// Interface für das Document-Modell
-export interface IDocument extends Document {
+// Export Prisma types
+export type { PrismaDocument, PrismaCheckIn, PrismaUser, Role };
+
+// Interface for Document model
+export interface IDocument {
+  id: string;
   name: string;
   description: string;
   file: string;
   createdAt: Date;
 }
 
-// Interface für das CheckIn-Modell
-export interface ICheckIn extends Document {
+// Interface for CheckIn model
+export interface ICheckIn {
+  id?: string;
   firstName?: string;
   lastName?: string;
   fullName: string;
@@ -26,66 +31,14 @@ export interface ICheckIn extends Document {
   pdfData?: Buffer;
 }
 
-// Interface für das User-Modell
-export interface IUser extends Document {
+// Interface for User model
+export interface IUser {
+  id?: string;
   username: string;
   password: string;
-  role: 'admin' | 'user';
-  createdAt: Date;
+  role: 'ADMIN' | 'USER';
+  createdAt?: Date;
 }
-
-// Define Mongoose schemas
-const CheckInSchema = new mongoose.Schema({
-  firstName: String,
-  lastName: String,
-  fullName: String,
-  company: String,
-  visitReason: String,
-  visitDate: Date,
-  visitTime: String,
-  acceptedRules: Boolean,
-  acceptedDocuments: [String],
-  timestamp: Date,
-  timezone: String,
-  reportUrl: String,
-  pdfData: Buffer // Store PDF as Buffer type for binary data
-});
-
-const DocumentSchema = new mongoose.Schema({
-  name: String,
-  description: String,
-  file: String, // Base64 encoded PDF string
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-const UserSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  password: {
-    type: String,
-    required: true
-  },
-  role: {
-    type: String,
-    enum: ['admin', 'user'],
-    default: 'user'
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-// Define models (only create once)
-export const CheckInModel = mongoose.models.CheckIn || mongoose.model<ICheckIn>('CheckIn', CheckInSchema, 'checkins');
-export const DocumentModel = mongoose.models.Document || mongoose.model<IDocument>('Document', DocumentSchema, 'documents');
-export const UserModel = mongoose.models.User || mongoose.model<IUser>('User', UserSchema, 'users');
 
 // Type für die Check-In-Daten
 export interface CheckInData {
@@ -101,16 +54,16 @@ export interface CheckInData {
   timestamp: Date;
 }
 
-// Type für User ohne Mongoose-Dokument-Eigenschaften
+// Type für User ohne Prisma-Eigenschaften
 export interface User {
   id: string;
   username: string;
   password: string; // In production, this would be hashed
-  role: 'admin' | 'user';
+  role: 'ADMIN' | 'USER';
   createdAt: string;
 }
 
-// Type für Document ohne Mongoose-Dokument-Eigenschaften
+// Type für Document ohne Prisma-Eigenschaften
 export interface Document {
   id: string;
   name: string;

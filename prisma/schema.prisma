@@ -1,0 +1,47 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Document {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  file        String   // Base64 encoded PDF string
+  createdAt   DateTime @default(now())
+}
+
+model CheckIn {
+  id                String   @id @default(uuid())
+  firstName         String?
+  lastName          String?
+  fullName          String
+  company           String
+  visitReason       String?
+  visitDate         DateTime?
+  visitTime         String?
+  acceptedRules     Boolean
+  acceptedDocuments String[]
+  timestamp         DateTime
+  timezone          String?
+  reportUrl         String?
+  pdfData           Bytes?   // Store PDF as binary data
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  ADMIN
+  USER
+}

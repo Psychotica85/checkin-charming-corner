@@ -1,5 +1,5 @@
 
-// API interface with MongoDB and email functionality
+// API interface with PostgreSQL and email functionality
 // This file re-exports all functionality from our service modules
 
 export { submitCheckIn, getCheckIns } from './services/checkInService';

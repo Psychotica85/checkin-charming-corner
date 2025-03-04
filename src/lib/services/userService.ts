@@ -1,27 +1,28 @@
-import { UserModel, User, IUser } from '../database/models';
+import { IUser, User } from '../database/models';
 import { connectToDatabase } from '../database/connection';
+import { prisma } from '../database/prisma';
 
 export const getUsers = async (): Promise<User[]> => {
   try {
     await connectToDatabase();
     
     // Check if any users exist
-    const count = await UserModel.countDocuments().exec();
+    const count = await prisma.user.count();
     
     // If no users exist, create the default admin user
     if (count === 0) {
-      const defaultAdmin = new UserModel({
-        username: 'admin',
-        password: 'admin', // In production, this would be hashed
-        role: 'admin',
-        createdAt: new Date()
+      const defaultAdmin = await prisma.user.create({
+        data: {
+          username: 'admin',
+          password: 'admin', // In production, this would be hashed
+          role: 'ADMIN',
+          createdAt: new Date()
+        }
       });
-      
-      await defaultAdmin.save();
       
       // Return the created admin user
       return [{
-        id: defaultAdmin._id.toString(),
+        id: defaultAdmin.id,
         username: defaultAdmin.username,
         password: defaultAdmin.password,
         role: defaultAdmin.role,
@@ -30,20 +31,19 @@ export const getUsers = async (): Promise<User[]> => {
     }
     
     // Otherwise, return all users
-    // Lösung für TypeScript-Fehler mit 'as any'
-    const users = await (UserModel.find().lean() as any).exec();
+    const users = await prisma.user.findMany();
     
-    return users.map((user: any) => ({
-      id: user._id.toString(),
+    return users.map(user => ({
+      id: user.id,
       username: user.username,
       password: user.password,
-      role: user.role as 'admin' | 'user',
+      role: user.role,
       createdAt: user.createdAt.toISOString()
     }));
   } catch (error) {
     console.error('Error fetching users:', error);
     
-    // Fallback to localStorage if MongoDB fails
+    // Fallback to localStorage if database fails
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     
     // If no users exist, create the default admin user
@@ -52,7 +52,7 @@ export const getUsers = async (): Promise<User[]> => {
         id: '1',
         username: 'admin',
         password: 'admin',
-        role: 'admin' as const,
+        role: 'ADMIN',
         createdAt: new Date().toISOString()
       };
       localStorage.setItem('users', JSON.stringify([defaultAdmin]));
@@ -68,28 +68,29 @@ export const createUser = async (userData: Omit<User, 'id' | 'createdAt'>): Prom
     await connectToDatabase();
     
     // Check if username already exists
-    // Lösung für TypeScript-Fehler mit 'as any'
-    const existingUser = await (UserModel.findOne({ username: userData.username }) as any).exec();
+    const existingUser = await prisma.user.findUnique({
+      where: { username: userData.username }
+    });
     
     if (existingUser) {
       return { success: false, message: 'Benutzername bereits vergeben' };
     }
     
     // Create new user
-    const newUser = new UserModel({
-      username: userData.username,
-      password: userData.password,
-      role: userData.role,
-      createdAt: new Date()
+    await prisma.user.create({
+      data: {
+        username: userData.username,
+        password: userData.password,
+        role: userData.role,
+        createdAt: new Date()
+      }
     });
-    
-    await newUser.save();
     
     return { success: true, message: 'Benutzer erfolgreich erstellt' };
   } catch (error) {
     console.error('Error creating user:', error);
     
-    // Fallback to localStorage if MongoDB fails
+    // Fallback to localStorage if database fails
     try {
       const users = await getUsers();
       
@@ -121,11 +122,12 @@ export const updateUser = async (id: string, userData: Partial<Omit<User, 'id' |
     
     // If changing username, check if it's already taken by another user
     if (userData.username) {
-      // Lösung für TypeScript-Fehler mit 'as any'
-      const existingUser = await (UserModel.findOne({ 
-        username: userData.username,
-        _id: { $ne: id }
-      }) as any).exec();
+      const existingUser = await prisma.user.findFirst({
+        where: { 
+          username: userData.username,
+          id: { not: id }
+        }
+      });
       
       if (existingUser) {
         return { success: false, message: 'Benutzername bereits vergeben' };
@@ -133,12 +135,10 @@ export const updateUser = async (id: string, userData: Partial<Omit<User, 'id' |
     }
     
     // Update user
-    // Lösung für TypeScript-Fehler mit 'as any'
-    const updatedUser = await (UserModel.findByIdAndUpdate(
-      id,
-      { $set: userData },
-      { new: true }
-    ) as any).exec();
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: userData
+    });
     
     if (!updatedUser) {
       return { success: false, message: 'Benutzer nicht gefunden' };
@@ -148,7 +148,7 @@ export const updateUser = async (id: string, userData: Partial<Omit<User, 'id' |
   } catch (error) {
     console.error('Error updating user:', error);
     
-    // Fallback to localStorage if MongoDB fails
+    // Fallback to localStorage if database fails
     try {
       const users = await getUsers();
       const userIndex = users.findIndex(user => user.id === id);
@@ -189,43 +189,46 @@ export const deleteUser = async (id: string): Promise<{ success: boolean, messag
     await connectToDatabase();
     
     // Get all admin users
-    // Lösung für TypeScript-Fehler mit 'as any'
-    const adminUsers = await (UserModel.find({ role: 'admin' }).lean() as any).exec();
+    const adminUsers = await prisma.user.findMany({
+      where: { role: 'ADMIN' }
+    });
     
     // Get the user to delete
-    // Lösung für TypeScript-Fehler mit 'as any'
-    const userToDelete = await (UserModel.findById(id).lean() as any).exec();
+    const userToDelete = await prisma.user.findUnique({
+      where: { id }
+    });
     
     if (!userToDelete) {
       return { success: false, message: 'Benutzer nicht gefunden' };
     }
     
     // Prevent deleting the last admin user
-    if (userToDelete.role === 'admin' && adminUsers.length <= 1) {
+    if (userToDelete.role === 'ADMIN' && adminUsers.length <= 1) {
       return { success: false, message: 'Der letzte Admin-Benutzer kann nicht gelöscht werden' };
     }
     
     // Delete the user
-    // Lösung für TypeScript-Fehler mit 'as any'
-    await (UserModel.findByIdAndDelete(id) as any).exec();
+    await prisma.user.delete({
+      where: { id }
+    });
     
     return { success: true, message: 'Benutzer erfolgreich gelöscht' };
   } catch (error) {
     console.error('Error deleting user:', error);
     
-    // Fallback to localStorage if MongoDB fails
+    // Fallback to localStorage if database fails
     try {
       const users = await getUsers();
       
       // Prevent deleting the last admin user
-      const admins = users.filter(user => user.role === 'admin');
+      const admins = users.filter(user => user.role === 'ADMIN');
       const userToDelete = users.find(user => user.id === id);
       
       if (!userToDelete) {
         return { success: false, message: 'Benutzer nicht gefunden' };
       }
       
-      if (userToDelete.role === 'admin' && admins.length <= 1) {
+      if (userToDelete.role === 'ADMIN' && admins.length <= 1) {
         return { success: false, message: 'Der letzte Admin-Benutzer kann nicht gelöscht werden' };
       }
       
@@ -245,11 +248,12 @@ export const authenticateUser = async (username: string, password: string): Prom
     await connectToDatabase();
     
     // Find user by username and password
-    // Lösung für TypeScript-Fehler mit 'as any'
-    const user = await (UserModel.findOne({ 
-      username: username,
-      password: password 
-    }).lean() as any).exec();
+    const user = await prisma.user.findFirst({
+      where: { 
+        username,
+        password 
+      }
+    });
     
     if (!user) {
       return { success: false, message: 'Ungültiger Benutzername oder Passwort' };
@@ -260,16 +264,16 @@ export const authenticateUser = async (username: string, password: string): Prom
       success: true, 
       message: 'Anmeldung erfolgreich', 
       user: {
-        id: user._id.toString(),
+        id: user.id,
         username: user.username,
-        role: user.role as 'admin' | 'user',
+        role: user.role,
         createdAt: user.createdAt.toISOString()
       }
     };
   } catch (error) {
     console.error('Error authenticating user:', error);
     
-    // Fallback to localStorage if MongoDB fails
+    // Fallback to localStorage if database fails
     try {
       const users = await getUsers();
       const user = users.find(user => user.username === username && user.password === password);

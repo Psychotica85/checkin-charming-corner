@@ -1,9 +1,10 @@
 
 import { formatInTimeZone } from 'date-fns-tz';
-import { CheckInModel, CheckInData, ICheckIn } from '../database/models';
+import { CheckInData, ICheckIn } from '../database/models';
 import { connectToDatabase } from '../database/connection';
 import { generateCheckInReport } from '../pdfGenerator';
 import { getDocuments } from './documentService';
+import { prisma } from '../database/prisma';
 
 export const submitCheckIn = async (data: CheckInData): Promise<{ success: boolean, message: string, reportUrl?: string }> => {
   console.log('Check-in data submitted:', data);
@@ -14,7 +15,7 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
     // Create timestamp with Berlin timezone
     const berlinTimestamp = formatInTimeZone(new Date(), 'Europe/Berlin', "yyyy-MM-dd'T'HH:mm:ssXXX");
     
-    // Get documents from MongoDB
+    // Get documents from database
     const documents = await getDocuments();
     
     // Generate PDF report
@@ -29,20 +30,27 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
       timestamp: new Date(berlinTimestamp)
     }, documents);
     
-    // Convert the blob to Buffer to store in MongoDB
+    // Convert the blob to Buffer to store in database
     const arrayBuffer = await pdfBlob.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     
     // Create a new check-in record
-    const newCheckIn = new CheckInModel({
-      ...data,
-      timestamp: berlinTimestamp,
-      timezone: 'Europe/Berlin',
-      pdfData: buffer
+    await prisma.checkIn.create({
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        fullName: data.fullName,
+        company: data.company,
+        visitReason: data.visitReason,
+        visitDate: data.visitDate,
+        visitTime: data.visitTime,
+        acceptedRules: data.acceptedRules,
+        acceptedDocuments: data.acceptedDocuments || [],
+        timestamp: new Date(berlinTimestamp),
+        timezone: 'Europe/Berlin',
+        pdfData: buffer
+      }
     });
-    
-    // Save to MongoDB
-    await newCheckIn.save();
     
     // Create a URL for the PDF (for preview in browser)
     const pdfUrl = URL.createObjectURL(pdfBlob);
@@ -62,15 +70,18 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
 };
 
 export const getCheckIns = async (): Promise<any[]> => {
-  console.log('Fetching check-ins from MongoDB');
+  console.log('Fetching check-ins from database');
   
   try {
     await connectToDatabase();
-    // Lösung für TypeScript-Fehler mit 'as any'
-    const checkIns = await (CheckInModel.find().sort({ timestamp: -1 }).lean() as any).exec();
+    const checkIns = await prisma.checkIn.findMany({
+      orderBy: {
+        timestamp: 'desc'
+      }
+    });
     
     // Create object URLs for PDF data
-    return checkIns.map((checkIn: any) => {
+    return checkIns.map((checkIn) => {
       const { pdfData, ...rest } = checkIn;
       
       // If we have PDF data, create a blob URL for it
@@ -80,7 +91,7 @@ export const getCheckIns = async (): Promise<any[]> => {
         reportUrl = URL.createObjectURL(blob);
       }
       
-      return { ...rest, reportUrl, _id: checkIn._id.toString() };
+      return { ...rest, reportUrl };
     });
   } catch (error) {
     console.error('Error fetching check-ins:', error);
