@@ -104,10 +104,12 @@ volumes:
 
 ## GitHub-Workflows
 
-Das Projekt enthält einen GitHub-Workflow für automatisierte Docker-Builds. Um Docker-Images zu pushen, müssen in den GitHub-Repository-Einstellungen folgende Secrets konfiguriert werden:
+Das Projekt enthält einen GitHub-Workflow für automatisierte Docker-Builds. Die Build-Images werden automatisch in die GitHub Container Registry (ghcr.io) hochgeladen. Der Workflow nutzt das automatisch bereitgestellte `GITHUB_TOKEN`-Secret, daher sind keine weiteren Konfigurationen erforderlich.
 
-- `DOCKERHUB_USERNAME`: Ihr DockerHub-Benutzername
-- `DOCKERHUB_TOKEN`: Ihr DockerHub-Access-Token
+Das Docker-Image kann dann mit folgendem Befehl verwendet werden:
+```
+docker pull ghcr.io/IHR_GITHUB_BENUTZERNAME/checkin-system:latest
+```
 
 ## Lizenz
 
