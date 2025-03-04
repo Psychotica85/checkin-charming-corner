@@ -1,6 +1,6 @@
 
 import { CheckIn } from "@/lib/database/models";
-import { isBrowser } from "./config";
+import { useLocalStorage } from "@/lib/database/connection";
 import {
   getCheckIns as checkInServiceGetCheckIns,
   deleteCheckIn as checkInServiceDeleteCheckIn,
@@ -12,12 +12,6 @@ import {
  */
 export const getCheckIns = async (): Promise<CheckIn[]> => {
   try {
-    // Prüfen, ob wir im Browser-Kontext sind
-    if (isBrowser()) {
-      console.log("Browser-Kontext erkannt für getCheckIns");
-      const localCheckIns = localStorage.getItem('checkIns');
-      return localCheckIns ? JSON.parse(localCheckIns) : [];
-    }
     return await checkInServiceGetCheckIns();
   } catch (error) {
     console.error("API error - getCheckIns:", error);
@@ -30,20 +24,6 @@ export const getCheckIns = async (): Promise<CheckIn[]> => {
  */
 export const submitCheckIn = async (checkInData: any) => {
   try {
-    // Prüfen, ob wir im Browser-Kontext sind
-    if (isBrowser()) {
-      console.log("Browser-Kontext erkannt für submitCheckIn");
-      const localCheckIns = localStorage.getItem('checkIns');
-      const checkIns = localCheckIns ? JSON.parse(localCheckIns) : [];
-      const newCheckIn = {
-        ...checkInData,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString()
-      };
-      checkIns.push(newCheckIn);
-      localStorage.setItem('checkIns', JSON.stringify(checkIns));
-      return { success: true, message: "Check-in erfolgreich erstellt" };
-    }
     return await checkInServiceSubmitCheckIn(checkInData);
   } catch (error) {
     console.error("API error - submitCheckIn:", error);
@@ -56,17 +36,6 @@ export const submitCheckIn = async (checkInData: any) => {
  */
 export const updateCheckIn = async (id: string, checkInData: any) => {
   try {
-    // Prüfen, ob wir im Browser-Kontext sind
-    if (isBrowser()) {
-      console.log("Browser-Kontext erkannt für updateCheckIn");
-      const localCheckIns = localStorage.getItem('checkIns');
-      const checkIns = localCheckIns ? JSON.parse(localCheckIns) : [];
-      const updatedCheckIns = checkIns.map((checkIn: any) => 
-        checkIn.id === id ? { ...checkIn, ...checkInData } : checkIn
-      );
-      localStorage.setItem('checkIns', JSON.stringify(updatedCheckIns));
-      return { success: true, message: "Check-in erfolgreich aktualisiert" };
-    }
     // Implementierung für updateCheckIn
     console.log(`Updating check-in ${id}:`, checkInData);
     return { success: true, message: "Check-in erfolgreich aktualisiert" };
@@ -81,15 +50,6 @@ export const updateCheckIn = async (id: string, checkInData: any) => {
  */
 export const deleteCheckIn = async (id: string) => {
   try {
-    // Prüfen, ob wir im Browser-Kontext sind
-    if (isBrowser()) {
-      console.log("Browser-Kontext erkannt für deleteCheckIn");
-      const localCheckIns = localStorage.getItem('checkIns');
-      const checkIns = localCheckIns ? JSON.parse(localCheckIns) : [];
-      const filteredCheckIns = checkIns.filter((checkIn: any) => checkIn.id !== id);
-      localStorage.setItem('checkIns', JSON.stringify(filteredCheckIns));
-      return { success: true, message: "Check-in erfolgreich gelöscht" };
-    }
     return await checkInServiceDeleteCheckIn(id);
   } catch (error) {
     console.error("API error - deleteCheckIn:", error);

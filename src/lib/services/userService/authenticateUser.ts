@@ -1,14 +1,11 @@
 
 import { User } from '../../database/models';
 
-// Browser-Erkennung
-const isBrowser = typeof window !== 'undefined';
-
 // Standard-Admin aus Umgebungsvariablen oder Standardwerte
 const getAdminCredentials = () => {
-  // Verwende Standardwerte für Admin-Anmeldedaten
-  const username = 'admin';
-  const password = 'admin';
+  // Standardwerte für Admin-Anmeldedaten aus Umgebungsvariablen
+  const username = import.meta.env.VITE_ADMIN_USERNAME || 'admin';
+  const password = import.meta.env.VITE_ADMIN_PASSWORD || 'admin';
   
   console.log("Admin-Anmeldedaten konfiguriert:", { username });
   return { username, password };
@@ -23,7 +20,7 @@ export const authenticateUser = async (username: string, password: string): Prom
       expected: { username: adminCredentials.username }
     });
     
-    // Vergleiche Anmeldedaten case-insensitive
+    // Vergleiche Anmeldedaten case-insensitive für Benutzernamen
     if (username.toLowerCase() === adminCredentials.username.toLowerCase() && 
         password === adminCredentials.password) {
       // Erfolgreiche Anmeldung als Admin

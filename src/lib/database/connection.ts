@@ -1,18 +1,19 @@
 
 // Konfiguration für die MySQL-Datenbankverbindung
 const dbConfig = {
-  host: process.env.DB_HOST || 'mysql', // Container-Name im Docker-Netzwerk
-  port: parseInt(process.env.DB_PORT || '3306'),
-  user: process.env.DB_USER || 'checkin',
-  password: process.env.DB_PASSWORD || 'checkin', 
-  database: process.env.DB_NAME || 'checkin_db',
+  host: import.meta.env.VITE_DB_HOST || 'mysql', // Container-Name im Docker-Netzwerk
+  port: parseInt(import.meta.env.VITE_DB_PORT || '3306'),
+  user: import.meta.env.VITE_DB_USER || 'checkin',
+  password: import.meta.env.VITE_DB_PASSWORD || 'checkin', 
+  database: import.meta.env.VITE_DB_NAME || 'checkin_db',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 };
 
-// Browser-Erkennung
-export const isBrowser = typeof window !== 'undefined';
+// Diese Variable bestimmt, ob wir die Datenbank direkt ansprechen
+// Im Produktionssystem wird dies immer auf "false" gesetzt
+export const useLocalStorage = false;
 
 // Typ-Definitionen für Callback-Funktionen
 export type DatabaseCallback<T> = (conn: any) => Promise<T>;
@@ -21,57 +22,101 @@ export type DatabaseCallback<T> = (conn: any) => Promise<T>;
 export const withDatabase = async <T>(
   databaseFunction: DatabaseCallback<T>
 ): Promise<T> => {
-  // Im Browser-Kontext verwenden wir localStorage
-  if (isBrowser) {
-    console.log("Browser-Kontext: Verwende lokalen Speicher statt Datenbank");
+  // Wenn wir lokalen Speicher verwenden (nur für Entwicklung/Tests)
+  if (useLocalStorage) {
+    console.log("Verwendung von lokalem Speicher deaktiviert - Kommunikation mit Backend-Server");
     
-    // Dummy-Connection-Objekt für Browser
-    const browserConnection = {
-      query: async (query: string, params?: any[]) => {
-        console.log("Browser-DB-Query:", { query, params });
-        return [[], []];
-      },
-      release: () => {}
-    };
-    
-    return await databaseFunction(browserConnection);
+    // Wir müssen hier einen API-Endpunkt aufrufen statt localStorage zu nutzen
+    // Implementierung des API-Aufrufs würde hier folgen
+    throw new Error("Lokale Speicherung ist deaktiviert - Bitte Backend-API verwenden");
   }
   
-  // Server-Kontext: Diese Funktion wird im Browser nie aufgerufen
-  console.log("Server-Kontext: Führe echte Datenbankoperation durch");
-  throw new Error("Server-Kontext-Operationen sollten nicht im Browser aufgerufen werden");
+  // In diesem Fall verwenden wir tatsächlich die Datenbank über das Backend
+  // Wir rufen hier den entsprechenden API-Endpunkt auf
+  try {
+    const mysql = await import('mysql2/promise');
+    const pool = mysql.createPool(dbConfig);
+    
+    // Verbindung aus dem Pool holen
+    const connection = await pool.getConnection();
+    console.log("Datenbankverbindung hergestellt");
+    
+    try {
+      // Funktion mit der Datenbankverbindung ausführen
+      return await databaseFunction(connection);
+    } finally {
+      // Verbindung zurück in den Pool geben
+      connection.release();
+    }
+  } catch (error) {
+    console.error("Datenbankfehler:", error);
+    throw new Error(`Datenbank-Fehler: ${error.message}`);
+  }
 };
 
-// Datenbank-Initialisierung (nur für Browser-Kompatibilität)
+// Datenbank-Initialisierung 
 export const initializeDatabase = async (): Promise<void> => {
-  if (isBrowser) {
-    console.log("Browser-Kontext: Initialisiere lokalen Speicher");
+  try {
+    console.log("Initialisiere Datenbankverbindung...");
+    const mysql = await import('mysql2/promise');
+    const connection = await mysql.createConnection({
+      host: dbConfig.host,
+      port: dbConfig.port,
+      user: dbConfig.user,
+      password: dbConfig.password
+    });
     
-    // Check-ins initialisieren
-    if (!localStorage.getItem('checkIns')) {
-      localStorage.setItem('checkIns', JSON.stringify([]));
-    }
+    // Datenbank erstellen, falls sie nicht existiert
+    await connection.query(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
+    console.log(`Datenbank ${dbConfig.database} geprüft/erstellt`);
     
-    // Dokumente initialisieren
-    if (!localStorage.getItem('pdfDocuments')) {
-      localStorage.setItem('pdfDocuments', JSON.stringify([]));
-    }
+    // Datenbank auswählen
+    await connection.query(`USE ${dbConfig.database}`);
     
-    // Unternehmenseinstellungen initialisieren
-    if (!localStorage.getItem('companySettings')) {
-      const defaultSettings = {
-        id: '1',
-        address: 'Musterfirma GmbH\nMusterstraße 123\n12345 Musterstadt\nDeutschland',
-        logo: null,
-        updatedAt: new Date().toISOString()
-      };
-      localStorage.setItem('companySettings', JSON.stringify(defaultSettings));
-    }
+    // Tabellen erstellen
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS checkins (
+        id VARCHAR(36) PRIMARY KEY,
+        firstName VARCHAR(100) NOT NULL,
+        lastName VARCHAR(100) NOT NULL,
+        fullName VARCHAR(200) NOT NULL,
+        company VARCHAR(100) NOT NULL,
+        visitReason TEXT,
+        visitDate DATE NOT NULL,
+        visitTime VARCHAR(20) NOT NULL,
+        acceptedRules BOOLEAN DEFAULT 0,
+        acceptedDocuments TEXT,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        timezone VARCHAR(50),
+        pdfData LONGTEXT
+      )
+    `);
     
-    console.log("Browser-Kontext: Lokaler Speicher initialisiert");
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS documents (
+        id VARCHAR(36) PRIMARY KEY,
+        name VARCHAR(200) NOT NULL,
+        description TEXT,
+        file LONGTEXT,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS company_settings (
+        id VARCHAR(36) PRIMARY KEY,
+        address TEXT,
+        logo LONGTEXT,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+    
+    console.log("Datenbanktabellen sind initialisiert");
+    
+    await connection.end();
     return;
+  } catch (error) {
+    console.error("Fehler bei der Datenbankinitialisierung:", error);
+    throw error;
   }
-  
-  console.log("Server-Kontext: Datenbankschema wird initialisiert");
-  // Diese Funktion wird im Browser-Kontext nie aufgerufen
 };

@@ -13,9 +13,14 @@ services:
       - NODE_ENV=production
       - PORT=3000
       
-      # Admin-Anmeldedaten
+      # Umgebungsvariablen für Vite
       - VITE_ADMIN_USERNAME=admin
       - VITE_ADMIN_PASSWORD=admin
+      - VITE_DB_HOST=mysql
+      - VITE_DB_PORT=3306
+      - VITE_DB_USER=checkin
+      - VITE_DB_PASSWORD=checkin
+      - VITE_DB_NAME=checkin_db
       
       # SMTP-Konfiguration für E-Mail-Versand
       - VITE_SMTP_HOST=smtp.example.com
@@ -26,7 +31,7 @@ services:
       - VITE_SMTP_TO=recipient@example.com
       - VITE_SMTP_SUBJECT="Neuer Besucher Check-In"
       
-      # Datenbank-Konfiguration
+      # Datenbank-Konfiguration (für Server-Seite)
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_USER=checkin

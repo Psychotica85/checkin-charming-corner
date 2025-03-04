@@ -24,6 +24,15 @@ RUN chmod +x ./start.sh
 ENV NODE_ENV=production
 ENV PORT=3000
 
+# Umgebungsvariablen für Vite
+ENV VITE_ADMIN_USERNAME=admin
+ENV VITE_ADMIN_PASSWORD=admin
+ENV VITE_DB_HOST=mysql
+ENV VITE_DB_PORT=3306
+ENV VITE_DB_USER=checkin
+ENV VITE_DB_PASSWORD=checkin
+ENV VITE_DB_NAME=checkin_db
+
 # SMTP-Konfiguration
 ENV VITE_SMTP_HOST="smtp.example.com"
 ENV VITE_SMTP_PORT="587"

@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { getCompanySettings } from "@/lib/api";
 
 interface LogoProps {
   className?: string;
@@ -14,13 +15,9 @@ const Logo = ({ className }: LogoProps) => {
     const loadCompanyLogo = async () => {
       try {
         setIsLoading(true);
-        // Instead of making an API call, simply use a default logo or get from localStorage
-        const savedSettings = localStorage.getItem('companySettings');
-        if (savedSettings) {
-          const settings = JSON.parse(savedSettings);
-          if (settings && settings.logo) {
-            setCompanyLogo(settings.logo);
-          }
+        const settings = await getCompanySettings();
+        if (settings && settings.logo) {
+          setCompanyLogo(settings.logo);
         }
       } catch (error) {
         console.error("Failed to load company logo:", error);

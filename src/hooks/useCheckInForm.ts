@@ -1,8 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { submitCheckIn } from "@/lib/api";
-import { getDocuments } from "@/lib/services/documentService";
+import { submitCheckIn, getDocuments } from "@/lib/api";
 import { PDFDocument } from "@/lib/database/models";
 import { generateTimeOptions, getCurrentTimeOption } from "@/components/check-in/utils";
 
@@ -41,15 +40,6 @@ export const useCheckInForm = () => {
         }
       } catch (error) {
         console.error("Error loading documents:", error);
-        // Try to load from localStorage as fallback
-        const storedDocs = localStorage.getItem("pdfDocuments");
-        if (storedDocs) {
-          try {
-            setDocuments(JSON.parse(storedDocs));
-          } catch (e) {
-            console.error("Error parsing documents from localStorage:", e);
-          }
-        }
       }
     };
     
