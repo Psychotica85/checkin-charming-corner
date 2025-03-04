@@ -5,6 +5,7 @@ import { withDatabase } from '../database/connection';
 import { generateCheckInReport } from '../pdfGenerator';
 import { getDocuments } from './documentService';
 import { sendEmailWithPDF } from './emailService';
+import { getCompanySettings } from './companySettingsService';
 
 // Browser-Erkennung
 const isBrowser = typeof window !== 'undefined';
@@ -19,6 +20,9 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
     // Dokumente abrufen
     const documents = await getDocuments();
     
+    // Unternehmenseinstellungen abrufen
+    const companySettings = await getCompanySettings();
+    
     // PDF-Bericht generieren
     const pdfBlob = await generateCheckInReport({
       firstName: data.firstName || '',
@@ -29,7 +33,7 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
       visitTime: data.visitTime || '',
       acceptedDocuments: data.acceptedDocuments || [],
       timestamp: new Date(berlinTimestamp)
-    }, documents);
+    }, documents, companySettings);
     
     // PDF als Base64 konvertieren für Speicherung in der Datenbank
     const pdfBase64 = await new Promise<string>((resolve) => {

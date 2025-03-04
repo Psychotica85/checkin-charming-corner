@@ -27,20 +27,32 @@ const PDFViewer = ({ document, onAccept, isAccepted }: PDFViewerProps) => {
         return base64Data;
       }
       
-      // Extract base64 part from data URL
-      const base64Content = base64Data.split(',')[1];
-      const mimeType = base64Data.split(',')[0].split(':')[1].split(';')[0];
-      
-      // Convert base64 to binary
-      const binaryString = atob(base64Content);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+      // Check if this is a data URL
+      if (base64Data.startsWith('data:application/pdf')) {
+        // Extract base64 part from data URL
+        const base64Content = base64Data.split(',')[1];
+        const mimeType = base64Data.split(',')[0].split(':')[1].split(';')[0];
+        
+        // Convert base64 to binary
+        const binaryString = atob(base64Content);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        // Create blob and return URL
+        const blob = new Blob([bytes.buffer], { type: mimeType });
+        return URL.createObjectURL(blob);
       }
       
-      // Create blob and return URL
-      const blob = new Blob([bytes.buffer], { type: mimeType });
-      return URL.createObjectURL(blob);
+      // If the base64Data is just the content without the data URL prefix
+      // add the prefix and call this function again
+      if (!base64Data.includes(',')) {
+        return getPdfUrl(`data:application/pdf;base64,${base64Data}`);
+      }
+      
+      console.error('Unknown PDF data format:', base64Data.substring(0, 100) + '...');
+      return '';
     } catch (error) {
       console.error('Error creating blob URL:', error);
       return '';

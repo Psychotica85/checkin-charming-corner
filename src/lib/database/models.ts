@@ -35,6 +35,14 @@ export interface CheckIn {
   reportUrl?: string; // URL to generated PDF report
 }
 
+// Definition für Unternehmenseinstellungen
+export interface CompanySettings {
+  id: string;
+  address?: string; // Firmenanschrift
+  logo?: string; // base64-encoded logo image
+  updatedAt: string; // ISO string format
+}
+
 // Hilfstypen für Backend-Operationen
 export interface ApiResponse {
   success: boolean;

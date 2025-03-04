@@ -7,6 +7,9 @@ export { getDocuments, saveDocument, deleteDocument } from './services/documentS
 export { 
   getUsers, createUser, updateUser, deleteUser, authenticateUser 
 } from './services/userService';
+export { 
+  getCompanySettings, updateCompanySettings 
+} from './services/companySettingsService';
 
 // Admin user configuration
 export const ADMIN_USERNAME = import.meta.env.VITE_ADMIN_USERNAME || 'admin';
