@@ -138,6 +138,11 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
           message: `Check-in erfolgreich gespeichert. ${emailStatus} Willkommen!`,
           reportUrl: pdfUrl
         };
+      },
+      // Browser-Fallback (wird nicht verwendet)
+      () => {
+        console.error("Kritischer Fehler: Datenbankoperation im Browser nicht möglich");
+        throw new Error("Datenbankzugriff im Browser nicht möglich");
       }
     );
   } catch (error) {

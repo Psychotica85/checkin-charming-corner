@@ -72,6 +72,11 @@ export const getCheckIns = async (): Promise<CheckIn[]> => {
         console.error('Fehler beim Laden der Check-ins aus SQLite:', error);
         throw error; // Fehler weiterleiten
       }
+    },
+    // Browser-Fallback (wird nicht verwendet)
+    () => {
+      console.error("Kritischer Fehler: Datenbankoperation im Browser nicht möglich");
+      throw new Error("Datenbankzugriff im Browser nicht möglich");
     }
   );
 };

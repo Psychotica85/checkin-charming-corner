@@ -55,6 +55,11 @@ export const getCompanySettings = async (): Promise<CompanySettings> => {
         console.error('Fehler beim Laden der Unternehmenseinstellungen:', error);
         throw error; // Fehler weiterleiten
       }
+    },
+    // Browser-Fallback (wird nicht verwendet)
+    () => {
+      console.error("Kritischer Fehler: Unternehmenseinstellungen können im Browser nicht geladen werden");
+      throw new Error("Datenbankzugriff im Browser nicht möglich");
     }
   );
 };
@@ -99,6 +104,11 @@ export const updateCompanySettings = async (settings: Partial<CompanySettings>):
           console.error('Fehler beim Aktualisieren der Unternehmenseinstellungen:', error);
           throw error; // Fehler weiterleiten
         }
+      },
+      // Browser-Fallback (wird nicht verwendet)
+      () => {
+        console.error("Kritischer Fehler: Unternehmenseinstellungen können im Browser nicht aktualisiert werden");
+        throw new Error("Datenbankzugriff im Browser nicht möglich");
       }
     );
   } catch (error) {

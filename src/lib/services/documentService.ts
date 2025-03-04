@@ -34,6 +34,11 @@ export const getDocuments = async (): Promise<PDFDocument[]> => {
         console.error('Fehler beim Laden der Dokumente aus SQLite:', error);
         throw error; // Fehler weiterleiten
       }
+    },
+    // Browser-Fallback (wird nicht verwendet)
+    () => {
+      console.error("Kritischer Fehler: Dokumente können im Browser nicht geladen werden");
+      throw new Error("Datenbankzugriff im Browser nicht möglich");
     }
   );
 };
@@ -66,11 +71,15 @@ export const saveDocument = async (document: PDFDocument): Promise<boolean> => {
           VALUES (?, ?, ?, ?, ?)
         `);
         
+        // Anpassung der Typfehler bei fileData
+        // Überprüfen, ob file oder fileData vorhanden ist
+        const fileContent = document.file || (document as any).fileData;
+        
         stmt.run(
           document.id,
           document.name,
           document.description || '',
-          document.file || document.fileData, // Unterstützt beide Feldnamen
+          fileContent, // Verwenden Sie entweder file oder fileData
           document.createdAt
         );
         
@@ -80,6 +89,11 @@ export const saveDocument = async (document: PDFDocument): Promise<boolean> => {
         console.error('Fehler beim Speichern des Dokuments in der Datenbank:', error);
         throw error; // Fehler weiterleiten
       }
+    },
+    // Browser-Fallback (wird nicht verwendet)
+    () => {
+      console.error("Kritischer Fehler: Dokumente können im Browser nicht gespeichert werden");
+      throw new Error("Datenbankzugriff im Browser nicht möglich");
     }
   );
 };
@@ -106,6 +120,11 @@ export const deleteDocument = async (id: string): Promise<boolean> => {
         console.error('Fehler beim Löschen des Dokuments aus der Datenbank:', error);
         throw error; // Fehler weiterleiten
       }
+    },
+    // Browser-Fallback (wird nicht verwendet)
+    () => {
+      console.error("Kritischer Fehler: Dokumente können im Browser nicht gelöscht werden");
+      throw new Error("Datenbankzugriff im Browser nicht möglich");
     }
   );
 };

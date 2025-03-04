@@ -28,6 +28,11 @@ export const deleteCheckIn = async (id: string): Promise<{ success: boolean, mes
         console.error('Fehler beim Löschen des Check-ins aus SQLite:', error);
         throw error; // Fehler weiterleiten statt Rückgabe
       }
+    },
+    // Browser-Fallback (wird nicht verwendet)
+    () => {
+      console.error("Kritischer Fehler: Datenbankoperation im Browser nicht möglich");
+      throw new Error("Datenbankzugriff im Browser nicht möglich");
     }
   );
 };
