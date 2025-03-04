@@ -99,7 +99,8 @@ const CheckInTable = () => {
     
     // Datum Filter
     const dateMatches = !dateFilter || 
-      (checkIn.visitDate && checkIn.visitDate.includes(dateFilter));
+      (checkIn.visitDate && typeof checkIn.visitDate === 'string' && 
+       checkIn.visitDate.includes(dateFilter));
     
     // Zeit Filter
     const timeMatches = !timeFilter || 
@@ -110,7 +111,7 @@ const CheckInTable = () => {
 
   const handleViewPDF = (checkIn: CheckIn) => {
     setSelectedCheckIn(checkIn);
-    handleGeneratePDF(checkIn.id);
+    handleGeneratePDF(checkIn.id as string);
   };
 
   return (
