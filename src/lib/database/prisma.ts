@@ -1,39 +1,35 @@
 
+// PrismaClient für Browser und Node.js
 import { PrismaClient } from '@prisma/client';
 
-// Prevent multiple instances of Prisma Client in development
+// Globaler Typ für den PrismaClient
 declare global {
   var prisma: PrismaClient | undefined;
 }
 
-export const prisma = global.prisma || new PrismaClient();
+// Browser-Erkennung
+const isBrowser = typeof window !== 'undefined';
 
-if (process.env.NODE_ENV !== 'production') {
-  global.prisma = prisma;
+// Fallback für Browser-Umgebung
+class PrismaClientFallback {
+  // Implementiere Methoden, die im Browser verwendet werden könnten
+  async $connect() {
+    console.log('Browser-Umgebung: Prisma-Verbindung simuliert.');
+    return Promise.resolve();
+  }
+  
+  async $disconnect() {
+    console.log('Browser-Umgebung: Prisma-Verbindung getrennt.');
+    return Promise.resolve();
+  }
 }
 
-/**
- * Connect to PostgreSQL database using Prisma
- */
-export const connectToDatabase = async (): Promise<void> => {
-  try {
-    await prisma.$connect();
-    console.log('Connected to PostgreSQL database');
-  } catch (error) {
-    console.error('PostgreSQL connection error:', error);
-    throw new Error('Failed to connect to PostgreSQL database');
-  }
-};
+// PrismaClient für Node.js oder Fallback für Browser
+export const prisma = isBrowser 
+  ? (new PrismaClientFallback() as unknown as PrismaClient)
+  : (global.prisma || new PrismaClient());
 
-/**
- * Helper to handle database queries with TypeScript
- */
-export const executeQuery = async <T>(queryFn: () => Promise<T>): Promise<T> => {
-  try {
-    await connectToDatabase();
-    return await queryFn();
-  } catch (error) {
-    console.error('Database query error:', error);
-    throw error;
-  }
-};
+// Speichere PrismaClient in globalThis im Entwicklungsmodus in Node.js
+if (!isBrowser && process.env.NODE_ENV !== 'production') {
+  global.prisma = prisma;
+}

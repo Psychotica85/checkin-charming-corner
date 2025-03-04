@@ -2,7 +2,10 @@
 import { connectToDatabase } from '../../database/connection';
 import { prisma } from '../../database/prisma';
 
-// Role mapping utilities
+// Browser-Erkennung
+const isBrowser = typeof window !== 'undefined';
+
+// Rollenzuordnungs-Hilfsfunktionen
 export const mapPrismaRoleToFrontendRole = (role: 'ADMIN' | 'USER'): 'admin' | 'user' => {
   return role === 'ADMIN' ? 'admin' : 'user';
 };
@@ -11,13 +14,19 @@ export const mapFrontendRoleToPrismaRole = (role: 'admin' | 'user'): 'ADMIN' | '
   return role === 'admin' ? 'ADMIN' : 'USER';
 };
 
-// Helper to ensure database connection
+// Hilfsfunktion zur Sicherstellung der Datenbankverbindung
 export const withDatabase = async <T>(operation: () => Promise<T>, fallback: () => Promise<T>): Promise<T> => {
+  // Im Browser immer Fallback verwenden
+  if (isBrowser) {
+    console.log('Browser-Umgebung erkannt, verwende localStorage-Fallback');
+    return fallback();
+  }
+  
   try {
     await connectToDatabase();
     return await operation();
   } catch (error) {
-    console.error('Database operation error:', error);
+    console.error('Datenbankoperationsfehler:', error);
     return fallback();
   }
 };
