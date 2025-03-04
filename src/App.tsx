@@ -8,13 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
-
-// Globale Variable für Browser-Erkennung
-declare global {
-  interface Window {
-    IS_BROWSER: boolean;
-  }
-}
+import { DEFAULT_COMPANY_SETTINGS } from "./lib/api";
 
 // Konfiguration für TanStack Query
 const queryClient = new QueryClient({
@@ -28,25 +22,45 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  const [isLoading, setIsLoading] = useState(false); // Direkt mit false initialisieren
+  const [isInitialized, setIsInitialized] = useState(false);
   
   useEffect(() => {
     console.log("App component mounted");
     
-    // Lokalen Speicher initialisieren, wenn er noch nicht existiert
-    if (typeof window !== 'undefined' && !localStorage.getItem('companySettings')) {
-      localStorage.setItem('companySettings', JSON.stringify({
-        id: '1',
-        address: 'Musterfirma GmbH\nMusterstraße 123\n12345 Musterstadt\nDeutschland',
-        logo: '',
-        updatedAt: new Date().toISOString()
-      }));
-      console.log("Lokale Unternehmenseinstellungen initialisiert");
-    }
+    // Initialisierung der lokalen Daten
+    const initializeLocalStorage = () => {
+      // Check, ob lokaler Speicher existiert
+      if (typeof window === 'undefined') return;
+      
+      // Check-ins initialisieren
+      if (!localStorage.getItem('checkIns')) {
+        localStorage.setItem('checkIns', JSON.stringify([]));
+        console.log("Check-ins im lokalen Speicher initialisiert");
+      }
+      
+      // Dokumente initialisieren
+      if (!localStorage.getItem('pdfDocuments')) {
+        localStorage.setItem('pdfDocuments', JSON.stringify([]));
+        console.log("Dokumente im lokalen Speicher initialisiert");
+      }
+      
+      // Unternehmenseinstellungen initialisieren
+      if (!localStorage.getItem('companySettings')) {
+        localStorage.setItem('companySettings', JSON.stringify(DEFAULT_COMPANY_SETTINGS));
+        console.log("Unternehmenseinstellungen im lokalen Speicher initialisiert");
+      }
+      
+      // Initialisierung abgeschlossen
+      setIsInitialized(true);
+      console.log("Lokale Daten initialisiert");
+    };
+    
+    initializeLocalStorage();
   }, []);
   
-  console.log("App rendering, isLoading:", isLoading);
+  console.log("App rendering, isInitialized:", isInitialized);
   
+  // Anwendung sofort anzeigen, auch während der Initialisierung
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

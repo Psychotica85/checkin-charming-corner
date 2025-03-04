@@ -9,25 +9,34 @@ interface LogoProps {
 
 const Logo = ({ className }: LogoProps) => {
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadCompanyLogo = async () => {
       try {
+        setIsLoading(true);
+        console.log("Logo-Komponente lädt Unternehmenseinstellungen...");
         const settings = await getCompanySettings();
+        console.log("Unternehmenseinstellungen für Logo geladen:", settings);
         if (settings && settings.logo) {
           setCompanyLogo(settings.logo);
         }
       } catch (error) {
         console.error("Failed to load company logo:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     loadCompanyLogo();
   }, []);
 
+  // Fallback-Logo während des Ladens oder wenn kein Logo verfügbar ist
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      {companyLogo ? (
+      {isLoading ? (
+        <div className="w-20 h-20 rounded-xl bg-muted animate-pulse"></div>
+      ) : companyLogo ? (
         <img 
           src={companyLogo} 
           alt="Company Logo" 
