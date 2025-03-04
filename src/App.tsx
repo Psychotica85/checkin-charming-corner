@@ -1,4 +1,5 @@
 
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,7 +21,31 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  console.log("App component rendering"); // Debug log
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    console.log("App component mounted");
+    // Simulate initialization delay
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+      console.log("App ready to render routes");
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  console.log("App rendering, isLoading:", isLoading);
+  
+  // Simple loading screen
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
+        <div className="w-16 h-16 border-4 border-primary border-solid rounded-full border-t-transparent animate-spin mb-4"></div>
+        <h1 className="text-2xl font-bold text-primary mb-2">Gäste Check-In System</h1>
+        <p className="text-muted-foreground">Anwendung wird initialisiert...</p>
+      </div>
+    );
+  }
   
   return (
     <QueryClientProvider client={queryClient}>

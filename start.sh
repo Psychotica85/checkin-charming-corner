@@ -1,10 +1,10 @@
 
 #!/bin/sh
 
-# Run Prisma migrations
-echo "Running database migrations..."
-npx prisma migrate deploy
+# Verzeichnis für die Datenbank erstellen, falls es nicht existiert
+mkdir -p data
+chmod 777 data
 
-# Start the application
-echo "Starting the application..."
-serve -s dist -p 8080
+# Starte den Server
+echo "Starte das Gäste Check-In System..."
+node server.js

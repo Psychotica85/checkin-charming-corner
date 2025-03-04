@@ -1,36 +1,31 @@
 
 FROM node:18-alpine
 
-# Install dependencies for better-sqlite3
-RUN apk add --no-cache python3 make g++ 
-
-# Install dependencies for nodemailer (SMTP client)
-RUN apk add --no-cache ca-certificates
-
-# Set working directory
+# Arbeitssverzeichnis setzen
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Pakete für better-sqlite3 und andere Abhängigkeiten installieren
+RUN apk add --no-cache python3 make g++ ca-certificates
+
+# Paketdateien kopieren und Abhängigkeiten installieren
 COPY package*.json ./
 RUN npm install
-RUN npm install nodemailer
 
-# Copy project files
+# Projektdateien kopieren
 COPY . .
 
-# Build the application
+# Anwendung bauen
 RUN npm run build
 
-# Create directory for SQLite database
+# Verzeichnis für SQLite-Datenbank erstellen
 RUN mkdir -p /app/data
-RUN chmod 777 /app/data
+RUN chmod -R 777 /app/data
 
-# Set environment variables
+# Umgebungsvariablen setzen
 ENV NODE_ENV=production
-ENV VITE_ADMIN_USERNAME=admin
-ENV VITE_ADMIN_PASSWORD=admin
+ENV PORT=3000
 
-# SMTP-Konfiguration (standardmäßig leer, kann in docker-compose.yml überschrieben werden)
+# SMTP-Konfiguration (standardmäßig leer, wird in docker-compose.yml überschrieben)
 ENV VITE_SMTP_HOST=
 ENV VITE_SMTP_PORT=587
 ENV VITE_SMTP_USER=
@@ -38,8 +33,15 @@ ENV VITE_SMTP_PASS=
 ENV VITE_SMTP_FROM=
 ENV VITE_SMTP_TO=
 
-# Expose port
+# Standard-Anmeldedaten für Admin-Bereich
+ENV VITE_ADMIN_USERNAME=admin
+ENV VITE_ADMIN_PASSWORD=admin
+
+# Port freigeben
 EXPOSE 3000
 
-# Command to run the application
-CMD ["npm", "run", "start"]
+# Start-Skript ausführbar machen
+RUN chmod +x start.sh
+
+# Anwendung starten
+CMD ["./start.sh"]

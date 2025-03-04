@@ -1,122 +1,78 @@
 
-import nodemailer from 'nodemailer';
-import { PDFDocument } from '../database/models';
-import { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_TO } from '../api';
+/**
+ * E-Mail-Service zur Verwendung im Browser und Server
+ * 
+ * Im Browser: Simuliert E-Mail-Versand mit Konsolen-Logs
+ * Auf dem Server: Verwendet Nodemailer für tatsächlichen E-Mail-Versand
+ */
 
-// Transportobjekt für Nodemailer erstellen
-const transporter = nodemailer.createTransport({
-  host: SMTP_HOST,
-  port: SMTP_PORT,
-  secure: SMTP_PORT === 465, // true for 465, false for other ports
-  auth: {
-    user: SMTP_USER,
-    pass: SMTP_PASS,
-  },
-});
+interface EmailOptions {
+  to: string;
+  subject: string;
+  html: string;
+  attachments?: Array<{
+    filename: string;
+    path?: string;
+    content?: Buffer;
+  }>;
+}
 
-// Funktion zum Versenden einer E-Mail mit PDF-Anhang
-export const sendCheckInEmail = async (
-  checkInData: any, 
-  pdfBuffer: Buffer
-): Promise<boolean> => {
-  try {
-    // Mailoptionen konfigurieren
-    const mailOptions = {
-      from: SMTP_FROM,
-      to: SMTP_TO,
-      subject: `Neuer Check-In: ${checkInData.fullName} von ${checkInData.company}`,
-      text: `
-Sehr geehrte Damen und Herren,
-
-ein neuer Besucher hat sich angemeldet:
-
-Name: ${checkInData.fullName}
-Firma: ${checkInData.company}
-Grund des Besuchs: ${checkInData.visitReason}
-Datum: ${new Date(checkInData.visitDate).toLocaleDateString('de-DE')}
-Uhrzeit: ${checkInData.visitTime}
-
-Der Besucherausweis wurde dem Besucher ausgestellt.
-      `,
-      attachments: [
-        {
-          filename: `check-in-${checkInData.id}.pdf`,
-          content: pdfBuffer,
-          contentType: 'application/pdf'
-        }
-      ]
-    };
-
-    // E-Mail senden
-    const info = await transporter.sendMail(mailOptions);
-    console.log('E-Mail gesendet:', info.messageId);
+// Funktion zum Senden von E-Mails, die in beiden Umgebungen funktioniert
+export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
+  // Überprüfen, ob wir uns im Browser befinden
+  if (typeof window !== 'undefined' && window.IS_BROWSER) {
+    console.log('Browser-Umgebung erkannt: E-Mail-Versand wird simuliert');
+    console.log('E-Mail würde gesendet werden an:', options.to);
+    console.log('Betreff:', options.subject);
+    console.log('Anzahl der Anhänge:', options.attachments?.length || 0);
+    
+    // Simuliere erfolgreichen E-Mail-Versand im Browser
     return true;
-  } catch (error) {
-    console.error('Fehler beim Senden der E-Mail:', error);
-    return false;
-  }
-};
-
-// Funktion, die in checkInService.ts verwendet wird
-export const sendEmailWithPDF = async (
-  subject: string,
-  pdfBase64: string,
-  filename: string,
-  visitorName: string,
-  company: string,
-  visitReason: string
-): Promise<boolean> => {
-  try {
-    // Base64-Daten in Buffer umwandeln
-    const matches = pdfBase64.match(/^data:(.+);base64,(.+)$/);
-    if (!matches || matches.length !== 3) {
-      throw new Error('Ungültiges PDF-Format');
+  } else {
+    try {
+      // Server-Umgebung: Nodemailer verwenden (wird asynchron importiert, um Browser-Fehler zu vermeiden)
+      const nodemailer = await import('nodemailer');
+      
+      // SMTP-Konfiguration aus Umgebungsvariablen
+      const host = process.env.VITE_SMTP_HOST;
+      const port = parseInt(process.env.VITE_SMTP_PORT || '587');
+      const user = process.env.VITE_SMTP_USER;
+      const pass = process.env.VITE_SMTP_PASS;
+      const from = process.env.VITE_SMTP_FROM;
+      
+      // Wenn keine SMTP-Konfiguration vorhanden ist, Fehler loggen und simulieren
+      if (!host || !user || !pass || !from) {
+        console.warn('Keine vollständige SMTP-Konfiguration gefunden, E-Mail-Versand wird simuliert');
+        console.log('E-Mail würde gesendet werden an:', options.to);
+        console.log('Betreff:', options.subject);
+        return true;
+      }
+      
+      // Transporter konfigurieren
+      const transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465,
+        auth: {
+          user,
+          pass
+        }
+      });
+      
+      // E-Mail senden
+      await transporter.sendMail({
+        from,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        attachments: options.attachments
+      });
+      
+      console.log('E-Mail erfolgreich gesendet an:', options.to);
+      return true;
+    } catch (error) {
+      console.error('Fehler beim E-Mail-Versand:', error);
+      return false;
     }
-    const pdfBuffer = Buffer.from(matches[2], 'base64');
-
-    // Mail-Optionen konfigurieren
-    const mailOptions = {
-      from: SMTP_FROM,
-      to: SMTP_TO,
-      subject: subject,
-      text: `
-Sehr geehrte Damen und Herren,
-
-ein neuer Besucher hat sich angemeldet:
-
-Name: ${visitorName}
-Firma: ${company}
-Grund des Besuchs: ${visitReason}
-
-Der Besucherausweis wurde dem Besucher ausgestellt.
-      `,
-      attachments: [
-        {
-          filename: filename,
-          content: pdfBuffer,
-          contentType: 'application/pdf'
-        }
-      ]
-    };
-
-    // E-Mail senden
-    const info = await transporter.sendMail(mailOptions);
-    console.log('E-Mail gesendet:', info.messageId);
-    return true;
-  } catch (error) {
-    console.error('Fehler beim Senden der E-Mail:', error);
-    return false;
-  }
-};
-
-// Teste SMTP-Verbindung
-export const testSMTPConnection = async (): Promise<boolean> => {
-  try {
-    await transporter.verify();
-    console.log('SMTP-Verbindung erfolgreich');
-    return true;
-  } catch (error) {
-    console.error('SMTP-Verbindungsfehler:', error);
-    return false;
   }
 };

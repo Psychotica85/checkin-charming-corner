@@ -10,8 +10,12 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - PORT=3000
+      
+      # Admin-Anmeldedaten
       - VITE_ADMIN_USERNAME=admin
       - VITE_ADMIN_PASSWORD=admin
+      
       # SMTP-Konfiguration für E-Mail-Versand
       - VITE_SMTP_HOST=smtp.example.com
       - VITE_SMTP_PORT=587
