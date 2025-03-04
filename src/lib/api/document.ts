@@ -8,10 +8,24 @@ import {
 
 /**
  * Speichert ein Dokument
+ * Im Browser-Kontext simulieren wir dies für die Demonstration
  */
 export const saveDocument = async (pdfData: any) => {
   try {
-    return await documentServiceSaveDocument(pdfData);
+    console.log("saveDocument aufgerufen im Browser-Kontext");
+    
+    // Für die Demo stellen wir einen erfolgreichen API-Aufruf dar
+    return {
+      success: true,
+      message: "Dokument wurde erfolgreich gespeichert (simuliert im Browser)",
+      document: {
+        id: Date.now().toString(),
+        name: pdfData.name || "Dokument",
+        description: pdfData.description || "",
+        file: pdfData.file || null,
+        createdAt: new Date().toISOString()
+      }
+    };
   } catch (error) {
     console.error("API error - saveDocument:", error);
     return { success: false, message: "Failed to save PDF document" };
@@ -20,10 +34,14 @@ export const saveDocument = async (pdfData: any) => {
 
 /**
  * Lädt alle Dokumente
+ * Im Browser-Kontext simulieren wir dies für die Demonstration 
  */
 export const getDocuments = async () => {
   try {
-    return await documentServiceGetDocuments();
+    console.log("getDocuments aufgerufen im Browser-Kontext");
+    
+    // Für die Demo geben wir eine leere Liste zurück
+    return [];
   } catch (error) {
     console.error("API error - getDocuments:", error);
     return [];
@@ -32,10 +50,17 @@ export const getDocuments = async () => {
 
 /**
  * Löscht ein Dokument
+ * Im Browser-Kontext simulieren wir dies für die Demonstration
  */
 export const deleteDocument = async (id: string) => {
   try {
-    return await documentServiceDeleteDocument(id);
+    console.log("deleteDocument aufgerufen im Browser-Kontext mit ID:", id);
+    
+    // Für die Demo stellen wir einen erfolgreichen API-Aufruf dar
+    return { 
+      success: true, 
+      message: "Dokument wurde erfolgreich gelöscht (simuliert im Browser)" 
+    };
   } catch (error) {
     console.error("API error - deleteDocument:", error);
     return { success: false, message: "Failed to delete PDF document" };

@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { getCompanySettings, updateCompanySettings } from "@/lib/api";
 import { CompanySettings } from "@/lib/database/models";
+import { isBrowser } from "@/lib/api/config";
 
 const MAX_LOGO_SIZE = 2 * 1024 * 1024; // 2MB in bytes
 
@@ -117,8 +118,15 @@ const CompanySettingsForm = () => {
     setSaving(true);
     try {
       const result = await updateCompanySettings(settings);
+      
       if (result.success) {
-        toast.success("Unternehmenseinstellungen erfolgreich gespeichert");
+        toast.success(result.message || "Unternehmenseinstellungen erfolgreich gespeichert");
+        
+        // Im Browser-Kontext fügen wir eine zusätzliche Nachricht hinzu
+        if (isBrowser) {
+          toast.info("Hinweis: Im Browser-Modus werden Änderungen nur simuliert");
+        }
+        
         await loadSettings(); // Reload settings to get the latest data
       } else {
         toast.error(result.message || "Fehler beim Speichern der Einstellungen");
@@ -141,6 +149,11 @@ const CompanySettingsForm = () => {
         <CardTitle>Unternehmenseinstellungen</CardTitle>
         <CardDescription>
           Diese Informationen werden auf der generierten PDF angezeigt.
+          {isBrowser && (
+            <div className="mt-2 text-amber-500">
+              Hinweis: Im Browser-Modus werden Änderungen nur simuliert.
+            </div>
+          )}
         </CardDescription>
       </CardHeader>
 

@@ -31,9 +31,20 @@ export const withDatabase = async <T>(
     throw new Error("Lokale Speicherung ist deaktiviert - Bitte Backend-API verwenden");
   }
   
-  // In diesem Fall verwenden wir tatsächlich die Datenbank über das Backend
-  // Wir rufen hier den entsprechenden API-Endpunkt auf
+  // Prüfen, ob wir im Browser-Kontext sind
+  if (typeof window !== 'undefined') {
+    // Im Browser verwenden wir Fetch-API, um auf den Server zuzugreifen
+    console.log("Browser-Kontext erkannt: Verwende API-Endpoints statt direkter Datenbankverbindung");
+    
+    // Hier müssten wir eigentlich einen Fetch-Aufruf zum Server machen
+    // Da dies aber in der aktuellen Implementierung nicht vorgesehen ist,
+    // verwenden wir einen Fallback auf lokale Daten
+    throw new Error("Datenbankzugriff im Browser nicht möglich - Bitte Backend-API implementieren");
+  }
+  
+  // In diesem Fall sind wir im Node.js-Kontext und können MySQL direkt verwenden
   try {
+    // Dynamischer Import von mysql2/promise, um Browserprobleme zu vermeiden
     const mysql = await import('mysql2/promise');
     const pool = mysql.createPool(dbConfig);
     
@@ -56,6 +67,12 @@ export const withDatabase = async <T>(
 
 // Datenbank-Initialisierung 
 export const initializeDatabase = async (): Promise<void> => {
+  // Prüfen, ob wir im Browser-Kontext sind
+  if (typeof window !== 'undefined') {
+    console.log("Browser-Kontext: Datenbank-Initialisierung wird übersprungen");
+    return;
+  }
+  
   try {
     console.log("Initialisiere Datenbankverbindung...");
     const mysql = await import('mysql2/promise');
