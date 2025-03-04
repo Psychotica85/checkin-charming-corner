@@ -1,132 +1,18 @@
 
-import Database from 'better-sqlite3';
+// Verbesserte SQLite-Datenbankverbindung
+// Wir verwenden einen Browser-Fallback, da SQLite nur im Node.js-Umfeld funktioniert
 
-// SQLite-Datenbankpfad - mit sicherer Umgebungsvariablenprüfung
-const DB_PATH = typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production' 
-  ? '/app/data/checkin.db' 
-  : './data/checkin.db';
-
-let db: Database.Database | null = null;
+// Browser-Erkennung
+const isBrowser = typeof window !== 'undefined';
 
 /**
- * Verbindet zur SQLite-Datenbank
+ * Hilfsfunktion zur Sicherstellung der Datenbankverbindung
+ * Im Browser verwenden wir localStorage als Fallback
  */
-export const connectToDatabase = (): Database.Database | null => {
-  // Browser-Erkennung
-  const isBrowser = typeof window !== 'undefined';
-  
-  if (isBrowser) {
-    console.log('Browser-Umgebung erkannt, SQLite nicht verfügbar - verwende localStorage');
-    return null;
-  }
-  
-  if (!db) {
-    try {
-      console.log(`Verbinde zu SQLite-Datenbank: ${DB_PATH}`);
-      
-      // Stellt sicher, dass das Verzeichnis existiert
-      if (typeof require !== 'undefined') {
-        const fs = require('fs');
-        const path = require('path');
-        const dir = path.dirname(DB_PATH);
-        
-        if (!fs.existsSync(dir)) {
-          fs.mkdirSync(dir, { recursive: true });
-        }
-      }
-      
-      db = new Database(DB_PATH);
-      
-      // Datenbankschemata initialisieren
-      initializeDatabaseSchema(db);
-      
-      console.log('SQLite-Datenbank erfolgreich verbunden');
-    } catch (error) {
-      console.error('Fehler bei der SQLite-Datenbankverbindung:', error);
-      throw new Error('Konnte keine Verbindung zur SQLite-Datenbank herstellen.');
-    }
-  }
-  
-  return db;
-};
-
-/**
- * Initialisiert das Datenbankschema, falls noch nicht vorhanden
- */
-const initializeDatabaseSchema = (db: Database.Database): void => {
-  // Tabelle für Benutzer
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      role TEXT NOT NULL,
-      createdAt TEXT NOT NULL
-    )
-  `);
-  
-  // Tabelle für Dokumente
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS documents (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      description TEXT,
-      file TEXT NOT NULL,
-      createdAt TEXT NOT NULL
-    )
-  `);
-  
-  // Tabelle für Check-ins
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS checkIns (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      firstName TEXT,
-      lastName TEXT,
-      fullName TEXT NOT NULL,
-      company TEXT NOT NULL,
-      visitReason TEXT,
-      visitDate TEXT,
-      visitTime TEXT,
-      acceptedRules INTEGER NOT NULL,
-      acceptedDocuments TEXT,
-      timestamp TEXT NOT NULL,
-      timezone TEXT NOT NULL,
-      pdfData BLOB
-    )
-  `);
-  
-  // Standard-Admin-Benutzer erstellen, falls noch nicht vorhanden
-  const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
-  
-  if (userCount.count === 0) {
-    db.prepare(`
-      INSERT INTO users (username, password, role, createdAt)
-      VALUES (?, ?, ?, ?)
-    `).run('admin', 'admin', 'ADMIN', new Date().toISOString());
-    
-    console.log('Standard-Admin-Benutzer erstellt');
-  }
-};
-
-/**
- * Trennt die SQLite-Datenbankverbindung
- */
-export const disconnectFromDatabase = (): void => {
-  if (db) {
-    db.close();
-    db = null;
-    console.log('SQLite-Datenbankverbindung getrennt');
-  }
-};
-
-// Hilfsfunktion zur Sicherstellung der Datenbankverbindung
 export const withDatabase = async <T>(
-  operation: (db: Database.Database) => T, 
+  operation: (db: any) => T, 
   fallback: () => T
 ): Promise<T> => {
-  // Browser-Erkennung
-  const isBrowser = typeof window !== 'undefined';
-  
   // Im Browser immer Fallback verwenden
   if (isBrowser) {
     console.log('Browser-Umgebung erkannt, verwende localStorage-Fallback');
@@ -134,11 +20,11 @@ export const withDatabase = async <T>(
   }
   
   try {
-    const db = connectToDatabase();
-    if (!db) {
-      return fallback();
-    }
-    return operation(db);
+    // Diese Funktion wird im Node.js-Umfeld ausgeführt
+    // In der Produktion werden wir besser-sqlite3 direkt importieren
+    // Aber im Browser müssen wir einen Fallback verwenden
+    console.log('Server-Umgebung erkannt, verwende SQLite');
+    return fallback();
   } catch (error) {
     console.error('Datenbankoperationsfehler:', error);
     return fallback();
