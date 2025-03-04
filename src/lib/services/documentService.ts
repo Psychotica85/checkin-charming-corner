@@ -5,7 +5,7 @@ import { PDFDocument } from "@/lib/database/models";
 /**
  * Liest alle PDF-Dokumente aus der Datenbank
  */
-export const getDocuments = async (): Promise<PDFDocument[]> {
+export const getDocuments = async (): Promise<PDFDocument[]> => {
   return withDatabase(
     // SQL Datenbank Operation
     (db) => {
@@ -33,7 +33,7 @@ export const getDocuments = async (): Promise<PDFDocument[]> {
 /**
  * Speichert ein PDF-Dokument in der Datenbank
  */
-export const saveDocument = async (document: PDFDocument): Promise<boolean> {
+export const saveDocument = async (document: PDFDocument): Promise<boolean> => {
   return withDatabase(
     // SQL Datenbank Operation
     (db) => {
@@ -84,7 +84,7 @@ export const saveDocument = async (document: PDFDocument): Promise<boolean> {
 /**
  * Löscht ein PDF-Dokument aus der Datenbank
  */
-export const deleteDocument = async (id: string): Promise<boolean> {
+export const deleteDocument = async (id: string): Promise<boolean> => {
   return withDatabase(
     // SQL Datenbank Operation
     (db) => {
