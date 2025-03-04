@@ -1,8 +1,9 @@
 
-import { Document as PrismaDocument, CheckIn as PrismaCheckIn, User as PrismaUser, Role } from '@prisma/client';
+// Importing types from Prisma client
+import type { Document, CheckIn, User, Role } from '@prisma/client';
 
 // Export Prisma types
-export type { PrismaDocument, PrismaCheckIn, PrismaUser, Role };
+export type { Document as PrismaDocument, CheckIn as PrismaCheckIn, User as PrismaUser, Role };
 
 // Interface for Document model
 export interface IDocument {
@@ -31,12 +32,12 @@ export interface ICheckIn {
   pdfData?: Buffer;
 }
 
-// Interface for User model
+// Interface for User model with lowercase role for compatibility with Admin.tsx
 export interface IUser {
   id?: string;
   username: string;
   password: string;
-  role: 'ADMIN' | 'USER';
+  role: 'admin' | 'user'; // Lowercase for compatibility
   createdAt?: Date;
 }
 
@@ -54,12 +55,12 @@ export interface CheckInData {
   timestamp: Date;
 }
 
-// Type für User ohne Prisma-Eigenschaften
+// Type für User ohne Prisma-Eigenschaften mit lowercase role
 export interface User {
   id: string;
   username: string;
-  password: string; // In production, this would be hashed
-  role: 'ADMIN' | 'USER';
+  password: string;
+  role: 'admin' | 'user'; // Lowercase for compatibility with Admin.tsx
   createdAt: string;
 }
 

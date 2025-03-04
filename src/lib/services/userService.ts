@@ -1,6 +1,17 @@
+
 import { IUser, User } from '../database/models';
 import { connectToDatabase } from '../database/connection';
 import { prisma } from '../database/prisma';
+
+// Hilfsfunktion zur Umwandlung von ADMIN/USER zu admin/user für Frontend-Kompatibilität
+const mapPrismaRoleToFrontendRole = (role: 'ADMIN' | 'USER'): 'admin' | 'user' => {
+  return role === 'ADMIN' ? 'admin' : 'user';
+};
+
+// Hilfsfunktion zur Umwandlung von admin/user zu ADMIN/USER für Prisma-Kompatibilität
+const mapFrontendRoleToPrismaRole = (role: 'admin' | 'user'): 'ADMIN' | 'USER' => {
+  return role === 'admin' ? 'ADMIN' : 'USER';
+};
 
 export const getUsers = async (): Promise<User[]> => {
   try {
@@ -20,12 +31,12 @@ export const getUsers = async (): Promise<User[]> => {
         }
       });
       
-      // Return the created admin user
+      // Return the created admin user with mapped role
       return [{
         id: defaultAdmin.id,
         username: defaultAdmin.username,
         password: defaultAdmin.password,
-        role: defaultAdmin.role,
+        role: mapPrismaRoleToFrontendRole(defaultAdmin.role),
         createdAt: defaultAdmin.createdAt.toISOString()
       }];
     }
@@ -37,7 +48,7 @@ export const getUsers = async (): Promise<User[]> => {
       id: user.id,
       username: user.username,
       password: user.password,
-      role: user.role,
+      role: mapPrismaRoleToFrontendRole(user.role),
       createdAt: user.createdAt.toISOString()
     }));
   } catch (error) {
@@ -52,7 +63,7 @@ export const getUsers = async (): Promise<User[]> => {
         id: '1',
         username: 'admin',
         password: 'admin',
-        role: 'ADMIN',
+        role: 'admin',
         createdAt: new Date().toISOString()
       };
       localStorage.setItem('users', JSON.stringify([defaultAdmin]));
@@ -76,12 +87,15 @@ export const createUser = async (userData: Omit<User, 'id' | 'createdAt'>): Prom
       return { success: false, message: 'Benutzername bereits vergeben' };
     }
     
+    // Map frontend role to Prisma role
+    const prismaRole = mapFrontendRoleToPrismaRole(userData.role);
+    
     // Create new user
     await prisma.user.create({
       data: {
         username: userData.username,
         password: userData.password,
-        role: userData.role,
+        role: prismaRole,
         createdAt: new Date()
       }
     });
@@ -134,10 +148,18 @@ export const updateUser = async (id: string, userData: Partial<Omit<User, 'id' |
       }
     }
     
+    // Prepare update data
+    const updateData: any = { ...userData };
+    
+    // If role is being updated, map to Prisma role format
+    if (userData.role) {
+      updateData.role = mapFrontendRoleToPrismaRole(userData.role);
+    }
+    
     // Update user
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: userData
+      data: updateData
     });
     
     if (!updatedUser) {
@@ -221,14 +243,14 @@ export const deleteUser = async (id: string): Promise<{ success: boolean, messag
       const users = await getUsers();
       
       // Prevent deleting the last admin user
-      const admins = users.filter(user => user.role === 'ADMIN');
+      const admins = users.filter(user => user.role === 'admin');
       const userToDelete = users.find(user => user.id === id);
       
       if (!userToDelete) {
         return { success: false, message: 'Benutzer nicht gefunden' };
       }
       
-      if (userToDelete.role === 'ADMIN' && admins.length <= 1) {
+      if (userToDelete.role === 'admin' && admins.length <= 1) {
         return { success: false, message: 'Der letzte Admin-Benutzer kann nicht gelöscht werden' };
       }
       
@@ -259,14 +281,14 @@ export const authenticateUser = async (username: string, password: string): Prom
       return { success: false, message: 'Ungültiger Benutzername oder Passwort' };
     }
     
-    // Return user without password
+    // Return user without password, with mapped role
     return { 
       success: true, 
       message: 'Anmeldung erfolgreich', 
       user: {
         id: user.id,
         username: user.username,
-        role: user.role,
+        role: mapPrismaRoleToFrontendRole(user.role),
         createdAt: user.createdAt.toISOString()
       }
     };
