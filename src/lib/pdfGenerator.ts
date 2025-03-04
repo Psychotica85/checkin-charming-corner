@@ -49,8 +49,8 @@ export const generateCheckInReport = async (data: CheckInData, documents: any[],
         img.onerror = reject;
       });
       
-      // Maximale Breite für das Logo
-      const maxWidth = 250;
+      // Maximale Breite für das Logo (reduziert auf 60px)
+      const maxWidth = 60;
       let imgWidth = img.width;
       let imgHeight = img.height;
       
