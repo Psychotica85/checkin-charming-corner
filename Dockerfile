@@ -14,6 +14,10 @@ RUN npm install
 # Projektdateien kopieren
 COPY . .
 
+# Shell-Skript mit korrekten Zeilenumbrüchen erstellen und Berechtigungen setzen
+RUN chmod +x start.sh
+RUN sed -i 's/\r$//' start.sh
+
 # Anwendung bauen
 RUN npm run build
 
@@ -41,8 +45,5 @@ ENV VITE_ADMIN_PASSWORD=admin
 # Port freigeben
 EXPOSE 3000
 
-# Start-Skript ausführbar machen
-RUN chmod +x start.sh
-
-# Anwendung starten
-CMD ["./start.sh"]
+# Anwendung direkt starten ohne Shell-Skript
+CMD ["node", "server.js"]
