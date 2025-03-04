@@ -5,7 +5,7 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Pakete für MySQL-Client und andere Abhängigkeiten installieren
-RUN apk add --no-cache python3 make g++ ca-certificates curl procps busybox-extras mysql-client
+RUN apk add --no-cache python3 make g++ ca-certificates curl busybox-extras mysql-client
 
 # Paketdateien kopieren und Abhängigkeiten installieren
 COPY package*.json ./
@@ -17,32 +17,31 @@ COPY . .
 # Anwendung bauen
 RUN npm run build
 
+# Startskript ausführbar machen
+RUN chmod +x ./start.sh
+
 # Umgebungsvariablen setzen
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# SMTP-Konfiguration (standardmäßig leer, wird in docker-compose.yml überschrieben)
-ENV VITE_SMTP_HOST=""
+# SMTP-Konfiguration
+ENV VITE_SMTP_HOST="smtp.example.com"
 ENV VITE_SMTP_PORT="587"
-ENV VITE_SMTP_USER=""
-ENV VITE_SMTP_PASS=""
-ENV VITE_SMTP_FROM=""
-ENV VITE_SMTP_TO=""
+ENV VITE_SMTP_USER="user@example.com"
+ENV VITE_SMTP_PASS="yourpassword"
+ENV VITE_SMTP_FROM="noreply@example.com"
+ENV VITE_SMTP_TO="recipient@example.com"
 ENV VITE_SMTP_SUBJECT="Neuer Besucher Check-In"
 
-# Datenbank-Konfiguration (standardmäßig MySQL)
+# Datenbank-Konfiguration
 ENV DB_HOST="mysql"
 ENV DB_PORT="3306"
 ENV DB_USER="checkin"
 ENV DB_PASSWORD="checkin"
 ENV DB_NAME="checkin_db"
 
-# Standard-Anmeldedaten für Admin-Bereich
-ENV VITE_ADMIN_USERNAME=admin
-ENV VITE_ADMIN_PASSWORD=admin
-
 # Port freigeben
 EXPOSE 3000
 
 # Anwendung starten
-CMD ["node", "server.js"]
+CMD ["./start.sh"]

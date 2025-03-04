@@ -1,7 +1,6 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { getCompanySettings } from "@/lib/api";
 
 interface LogoProps {
   className?: string;
@@ -9,17 +8,19 @@ interface LogoProps {
 
 const Logo = ({ className }: LogoProps) => {
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const loadCompanyLogo = async () => {
       try {
         setIsLoading(true);
-        console.log("Logo-Komponente lädt Unternehmenseinstellungen...");
-        const settings = await getCompanySettings();
-        console.log("Unternehmenseinstellungen für Logo geladen:", settings);
-        if (settings && settings.logo) {
-          setCompanyLogo(settings.logo);
+        // Instead of making an API call, simply use a default logo or get from localStorage
+        const savedSettings = localStorage.getItem('companySettings');
+        if (savedSettings) {
+          const settings = JSON.parse(savedSettings);
+          if (settings && settings.logo) {
+            setCompanyLogo(settings.logo);
+          }
         }
       } catch (error) {
         console.error("Failed to load company logo:", error);
@@ -31,7 +32,7 @@ const Logo = ({ className }: LogoProps) => {
     loadCompanyLogo();
   }, []);
 
-  // Fallback-Logo während des Ladens oder wenn kein Logo verfügbar ist
+  // Fallback-Logo wenn kein Logo verfügbar ist
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {isLoading ? (

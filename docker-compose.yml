@@ -9,6 +9,7 @@ services:
     ports:
       - "3000:3000"
     environment:
+      # Grundlegende Konfiguration
       - NODE_ENV=production
       - PORT=3000
       
@@ -32,12 +33,9 @@ services:
       - DB_PASSWORD=checkin
       - DB_NAME=checkin_db
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     restart: unless-stopped
-    # Für einige Umgebungen können privilegierte Rechte helfen
-    # privileged: true
-    # Für einige Host-Systeme kann eine spezifische Benutzer-ID helfen
-    # user: "1000:1000"
 
   mysql:
     image: mysql:8.0
