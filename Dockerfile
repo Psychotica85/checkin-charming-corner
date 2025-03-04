@@ -1,3 +1,4 @@
+"annotations": { "org.opencontainers.image.description": "Checkin Application" }
 
 FROM node:18-alpine
 
