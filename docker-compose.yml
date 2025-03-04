@@ -1,24 +1,17 @@
 
-version: '3.8'
+version: '3'
 
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "3000:3000"
     environment:
       - NODE_ENV=production
-      - VITE_ADMIN_USERNAME=admin
-      - VITE_ADMIN_PASSWORD=admin
-      - VITE_SMTP_HOST=smtp.example.com
-      - VITE_SMTP_PORT=587
-      - VITE_SMTP_USER=user
-      - VITE_SMTP_PASS=password
-      - VITE_SMTP_FROM=no-reply@example.com
-      - VITE_SMTP_TO=admin@example.com
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=admin
     volumes:
-      - sqlite_data:/app/data
-
-volumes:
-  sqlite_data:
-    driver: local
+      - ./data:/app/data
+    restart: unless-stopped

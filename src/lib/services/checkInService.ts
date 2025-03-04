@@ -1,6 +1,6 @@
 
 import { formatInTimeZone } from 'date-fns-tz';
-import { CheckIn, CheckInData } from '../database/models';
+import { CheckIn } from '../database/models';
 import { withDatabase } from '../database/connection';
 import { generateCheckInReport } from '../pdfGenerator';
 import { getDocuments } from './documentService';
@@ -8,7 +8,7 @@ import { getDocuments } from './documentService';
 // Browser-Erkennung
 const isBrowser = typeof window !== 'undefined';
 
-export const submitCheckIn = async (data: CheckInData): Promise<{ success: boolean, message: string, reportUrl?: string }> => {
+export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, message: string, reportUrl?: string }> => {
   console.log('Check-in data submitted:', data);
   
   try {
@@ -31,10 +31,48 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
     }, documents);
     
     return withDatabase(
-      // Diese Funktion wird im Server ausgeführt (wird nie im Browser aufgerufen)
+      // Diese Funktion wird im Server ausgeführt
       (db) => {
         console.log("Server-Umgebung: Speichere Check-in in SQLite");
-        // URL für PDF-Vorschau im Browser erstellen
+        
+        // CheckIn-Daten vorbereiten
+        const checkInData = {
+          id: Date.now().toString(),
+          ...data,
+          timezone: 'Europe/Berlin',
+          timestamp: berlinTimestamp,
+          acceptedDocuments: JSON.stringify(data.acceptedDocuments || [])
+        };
+        
+        // In SQLite-Datenbank speichern
+        const stmt = db.prepare(`
+          INSERT INTO checkins (
+            id, firstName, lastName, fullName, company, 
+            visitReason, visitDate, visitTime, acceptedRules, 
+            acceptedDocuments, timestamp, timezone
+          ) VALUES (
+            ?, ?, ?, ?, ?, 
+            ?, ?, ?, ?, 
+            ?, ?, ?
+          )
+        `);
+        
+        stmt.run(
+          checkInData.id,
+          checkInData.firstName || null,
+          checkInData.lastName || null,
+          checkInData.fullName,
+          checkInData.company,
+          checkInData.visitReason || null,
+          checkInData.visitDate ? new Date(checkInData.visitDate).toISOString() : null,
+          checkInData.visitTime || null,
+          checkInData.acceptedRules ? 1 : 0,
+          checkInData.acceptedDocuments,
+          checkInData.timestamp,
+          checkInData.timezone
+        );
+        
+        // URL für PDF-Vorschau erstellen
         const pdfUrl = URL.createObjectURL(pdfBlob);
         
         return { 
@@ -77,10 +115,31 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
 
 export const getCheckIns = async (): Promise<CheckIn[]> => {
   return withDatabase(
-    // Diese Funktion wird im Server ausgeführt (wird nie im Browser aufgerufen)
+    // Diese Funktion wird im Server ausgeführt
     (db) => {
       console.log("Server-Umgebung: Lade Check-ins aus SQLite");
-      return [];
+      
+      try {
+        const stmt = db.prepare(`
+          SELECT id, firstName, lastName, fullName, company, 
+                 visitReason, visitDate, visitTime, acceptedRules, 
+                 acceptedDocuments, timestamp, timezone
+          FROM checkins
+          ORDER BY timestamp DESC
+        `);
+        
+        const rows = stmt.all();
+        
+        // Daten für die Clientseite aufbereiten
+        return rows.map((row: any) => ({
+          ...row,
+          acceptedRules: Boolean(row.acceptedRules),
+          acceptedDocuments: JSON.parse(row.acceptedDocuments || '[]')
+        }));
+      } catch (error) {
+        console.error('Fehler beim Laden der Check-ins aus SQLite:', error);
+        return [];
+      }
     },
     // Fallback zu localStorage im Browser
     () => {

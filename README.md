@@ -1,82 +1,79 @@
 
-# Digital Check-In System
+# Check-In System
 
-Eine moderne Webanwendung für Besucher-Check-ins mit Dokumentenverwaltung und automatischer PDF-Berichtgenerierung.
+Ein einfaches Check-In-System für Besucher mit PDF-Dokumentanzeige und -verwaltung.
 
-## Features
+## Funktionen
 
-- Digitaler Check-in für Besucher
-- Upload und Akzeptanz von PDF-Dokumenten
-- Automatische PDF-Berichtgenerierung für jeden Check-in
-- Admin-Portal mit Dokumentenverwaltung
-- SQLite-Integration für zuverlässige Datenspeicherung ohne externe Abhängigkeiten
-- Responsives Design für alle Geräte
+- Besucher-Check-In mit persönlichen Informationen
+- Anzeige und Akzeptanz von PDF-Dokumenten (Datenschutz, Sicherheitsregeln, etc.)
+- Generierung von Check-In-Bestätigungen als PDF
+- Admin-Bereich zur Verwaltung von Dokumenten und Einsicht in Check-In-Daten
+- Responsive Design für Desktop, Tablet und Mobile
 
-## Umgebungsvariablen
+## Technologie-Stack
 
-Die Anwendung verwendet folgende Umgebungsvariablen:
-
-| Variable | Beschreibung | Format | Beispiel |
-|----------|-------------|--------|---------|
-| `VITE_ADMIN_USERNAME` | Admin-Benutzername | string | admin |
-| `VITE_ADMIN_PASSWORD` | Admin-Passwort | string | admin |
-| `VITE_SMTP_HOST` | SMTP-Server-Hostname | string | smtp.example.com |
-| `VITE_SMTP_PORT` | SMTP-Server-Port | number | 587 |
-| `VITE_SMTP_USER` | SMTP-Benutzername | string | user@example.com |
-| `VITE_SMTP_PASS` | SMTP-Passwort | string | password123 |
-| `VITE_SMTP_FROM` | E-Mail-Absenderadresse | email | noreply@example.com |
-| `VITE_SMTP_TO` | E-Mail-Empfängeradresse | email | admin@example.com |
+- React für die Frontend-Implementierung
+- Tailwind CSS für das UI-Design
+- Shadcn/UI für wiederverwendbare Komponenten
+- SQLite für die Datenspeicherung (im Produktionsmodus)
+- LocalStorage als Fallback im Browser-Modus
+- Docker für die Containerisierung
 
 ## Installation
 
-1. Repository klonen
-2. Dependencies installieren:
-```bash
-npm install
-```
-3. Eine `.env`-Datei im Root-Verzeichnis mit den oben aufgelisteten Umgebungsvariablen erstellen
-4. Entwicklungsserver starten:
-```bash
-npm run dev
-```
+### Mit Docker (empfohlen)
 
-## SQLite-Setup
-
-Die Anwendung verwendet SQLite für die Datenspeicherung (nur für Check-Ins und Dokumente), was keine zusätzliche Installation erfordert:
-
-1. Die SQLite-Datenbank wird automatisch im `data/`-Verzeichnis erstellt
-2. Alle erforderlichen Tabellen werden beim ersten Start automatisch erstellt:
-   - `documents` - Speichert PDF-Dokumente für Besucher zum Akzeptieren
-   - `checkIns` - Speichert Besucher-Check-in-Daten
-
-## Admin-Anmeldung
-
-Das System verwendet einen einzelnen Admin-Benutzer:
-- **Standardmäßige Anmeldedaten:** 
-  - Benutzername: admin
-  - Passwort: admin
-- Diese können über die Umgebungsvariablen `VITE_ADMIN_USERNAME` und `VITE_ADMIN_PASSWORD` geändert werden.
-
-## Deployment
-
-Für das Produktions-Deployment:
-
-1. Anwendung bauen:
-```bash
-npm run build
-```
-2. Den Build-Ordner auf Ihren Webserver deployen
-3. Stellen Sie sicher, dass alle erforderlichen Umgebungsvariablen in Ihrer Produktionsumgebung gesetzt sind
-
-## Docker-Deployment
-
-Die Anwendung kann einfach mit Docker und Docker Compose deployed werden:
+1. Docker und Docker Compose installieren
+2. Repository klonen
+3. In das Repository-Verzeichnis wechseln
+4. Docker-Container starten:
 
 ```bash
 docker-compose up -d
 ```
 
-Dies wird die Anwendung mit der integrierten SQLite-Datenbank starten. Die SQLite-Datenbank wird auf einem Docker-Volume gespeichert, um Datenpersistenz zu gewährleisten. Die Anwendung ist dann unter http://localhost:8080 verfügbar.
+Die Anwendung ist dann unter http://localhost:3000 erreichbar.
+
+### Manuelle Installation
+
+1. Node.js (v16+) installieren
+2. Repository klonen
+3. In das Repository-Verzeichnis wechseln
+4. Dependencies installieren:
+
+```bash
+npm install
+```
+
+5. Anwendung starten:
+
+```bash
+npm run build
+npm run start
+```
+
+Die Anwendung ist dann unter http://localhost:3000 erreichbar.
+
+## Admin-Zugang
+
+Der standardmäßige Admin-Zugang ist:
+
+- Benutzername: admin
+- Passwort: admin
+
+Diese Zugangsdaten können über Umgebungsvariablen angepasst werden:
+
+```
+ADMIN_USERNAME=meinadmin
+ADMIN_PASSWORD=meinpasswort
+```
+
+## Daten-Persistenz
+
+Im Produktionsmodus (Docker oder `npm run start`) werden die Daten in einer SQLite-Datenbank gespeichert. Die Datenbank wird im Verzeichnis `/app/data` im Container gespeichert und kann über ein Volume persistiert werden.
+
+Bei der Ausführung im Browser (Entwicklungsmodus) werden die Daten im LocalStorage des Browsers gespeichert.
 
 ## Lizenz
 
