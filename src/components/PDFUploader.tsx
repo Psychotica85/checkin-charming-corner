@@ -130,6 +130,34 @@ const PDFUploader = () => {
     });
   };
 
+  // Function to create blob URL from base64 for PDF viewing
+  const createBlobUrl = (base64Data: string): string => {
+    try {
+      // Handle the case when base64Data might already be a blob URL
+      if (base64Data.startsWith('blob:')) {
+        return base64Data;
+      }
+      
+      // Extract base64 part from data URL
+      const base64Content = base64Data.split(',')[1];
+      const mimeType = base64Data.split(',')[0].split(':')[1].split(';')[0];
+      
+      // Convert base64 to binary
+      const binaryString = atob(base64Content);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      // Create blob and return URL
+      const blob = new Blob([bytes.buffer], { type: mimeType });
+      return URL.createObjectURL(blob);
+    } catch (error) {
+      console.error('Error creating blob URL:', error);
+      return '';
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -210,7 +238,7 @@ const PDFUploader = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(doc.file, "_blank")}
+                    onClick={() => window.open(createBlobUrl(doc.file), "_blank")}
                   >
                     Anzeigen
                   </Button>

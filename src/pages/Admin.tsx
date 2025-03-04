@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,11 +22,18 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// Vereinfachte User-Schnittstelle für die Admin-Komponente
 interface User {
   id: string;
   username: string;
   role: "admin" | "user";
+  createdAt: string;
+}
+
+interface CheckInFilters {
+  name: string;
+  company: string;
+  visitReason: string;
+  visitDate: string;
   createdAt: string;
 }
 
@@ -37,13 +43,21 @@ const Admin = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [checkIns, setCheckIns] = useState<any[]>([]);
+  const [filteredCheckIns, setFilteredCheckIns] = useState<any[]>([]);
   const [isLoadingCheckIns, setIsLoadingCheckIns] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [deletingCheckIn, setDeletingCheckIn] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
+  const [filters, setFilters] = useState<CheckInFilters>({
+    name: "",
+    company: "",
+    visitReason: "",
+    visitDate: "",
+    createdAt: "",
+  });
 
   useEffect(() => {
-    // Check if admin is already logged in
     const isAuthenticated = localStorage.getItem("adminAuthenticated") === "true";
     const savedUser = localStorage.getItem("currentUser");
     
@@ -51,22 +65,58 @@ const Admin = () => {
       setAuthenticated(true);
       setCurrentUser(JSON.parse(savedUser));
       
-      // Load check-ins
       loadCheckIns();
     }
   }, []);
+
+  useEffect(() => {
+    if (checkIns.length > 0) {
+      filterCheckIns();
+    }
+  }, [filters, checkIns]);
 
   const loadCheckIns = async () => {
     try {
       setIsLoadingCheckIns(true);
       const data = await getCheckIns();
       setCheckIns(data);
+      setFilteredCheckIns(data);
     } catch (error) {
       console.error("Error loading check-ins:", error);
       toast.error("Fehler beim Laden der Check-Ins");
     } finally {
       setIsLoadingCheckIns(false);
     }
+  };
+
+  const filterCheckIns = () => {
+    const filtered = checkIns.filter(checkIn => {
+      const fullName = `${checkIn.firstName || ''} ${checkIn.lastName || ''}`.trim();
+      
+      const nameMatch = filters.name.length < 3 || 
+        fullName.toLowerCase().includes(filters.name.toLowerCase());
+      
+      const companyMatch = filters.company.length < 3 || 
+        checkIn.company.toLowerCase().includes(filters.company.toLowerCase());
+      
+      const reasonMatch = filters.visitReason.length < 3 || 
+        (checkIn.visitReason && checkIn.visitReason.toLowerCase().includes(filters.visitReason.toLowerCase()));
+      
+      const dateMatch = filters.visitDate.length < 3 || 
+        (checkIn.visitDate && format(new Date(checkIn.visitDate), "dd.MM.yyyy", { locale: de }).includes(filters.visitDate));
+      
+      const createdMatch = filters.createdAt.length < 3 || 
+        formatDate(checkIn.timestamp).includes(filters.createdAt);
+      
+      return nameMatch && companyMatch && reasonMatch && dateMatch && createdMatch;
+    });
+    
+    setFilteredCheckIns(filtered);
+  };
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -121,7 +171,7 @@ const Admin = () => {
       const result = await deleteCheckIn(deletingCheckIn);
       if (result.success) {
         toast.success(result.message);
-        loadCheckIns(); // Neu laden nach dem Löschen
+        loadCheckIns();
       } else {
         toast.error(result.message);
       }
@@ -146,7 +196,6 @@ const Admin = () => {
       <div className="min-h-screen w-full flex flex-col bg-gradient-to-br from-background to-muted">
         <Toaster position="top-center" />
         
-        {/* Header */}
         <header className="w-full py-6 px-4 sm:px-6 glass border-b border-border/50 sticky top-0 z-10 bg-background/95 backdrop-blur">
           <div className="max-w-7xl mx-auto flex justify-between items-center">
             <Logo />
@@ -170,7 +219,6 @@ const Admin = () => {
           </div>
         </header>
 
-        {/* Main content */}
         <main className="flex-1 p-6">
           <div className="max-w-6xl mx-auto space-y-8">
             <div className="space-y-2">
@@ -206,10 +254,12 @@ const Admin = () => {
                     </Button>
                   </div>
                   
-                  {checkIns.length === 0 ? (
+                  {filteredCheckIns.length === 0 && !isLoadingCheckIns ? (
                     <div className="p-8 text-center rounded-lg bg-muted/50">
                       <p className="text-muted-foreground">
-                        Keine Check-Ins vorhanden. Sobald Besucher sich anmelden, werden ihre Daten hier angezeigt.
+                        {checkIns.length === 0 
+                          ? "Keine Check-Ins vorhanden. Sobald Besucher sich anmelden, werden ihre Daten hier angezeigt."
+                          : "Keine Check-Ins entsprechen den Filterkriterien."}
                       </p>
                     </div>
                   ) : (
@@ -217,18 +267,73 @@ const Admin = () => {
                       <table className="w-full border-collapse">
                         <thead>
                           <tr className="bg-muted/50 text-left">
-                            <th className="p-3 font-medium">Name</th>
-                            <th className="p-3 font-medium">Firma</th>
-                            <th className="p-3 font-medium">Grund des Besuchs</th>
-                            <th className="p-3 font-medium">Datum & Zeit</th>
-                            <th className="p-3 font-medium">Erstellungsdatum</th>
+                            <th className="p-3 font-medium">
+                              <div className="space-y-1">
+                                <span>Name</span>
+                                <Input
+                                  placeholder="Suchen..."
+                                  name="name"
+                                  value={filters.name}
+                                  onChange={handleFilterChange}
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                            </th>
+                            <th className="p-3 font-medium">
+                              <div className="space-y-1">
+                                <span>Firma</span>
+                                <Input
+                                  placeholder="Suchen..."
+                                  name="company"
+                                  value={filters.company}
+                                  onChange={handleFilterChange}
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                            </th>
+                            <th className="p-3 font-medium">
+                              <div className="space-y-1">
+                                <span>Grund des Besuchs</span>
+                                <Input
+                                  placeholder="Suchen..."
+                                  name="visitReason"
+                                  value={filters.visitReason}
+                                  onChange={handleFilterChange}
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                            </th>
+                            <th className="p-3 font-medium">
+                              <div className="space-y-1">
+                                <span>Datum & Zeit</span>
+                                <Input
+                                  placeholder="Suchen..."
+                                  name="visitDate"
+                                  value={filters.visitDate}
+                                  onChange={handleFilterChange}
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                            </th>
+                            <th className="p-3 font-medium">
+                              <div className="space-y-1">
+                                <span>Erstellungsdatum</span>
+                                <Input
+                                  placeholder="Suchen..."
+                                  name="createdAt"
+                                  value={filters.createdAt}
+                                  onChange={handleFilterChange}
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                            </th>
                             <th className="p-3 font-medium">Dokumente</th>
                             <th className="p-3 font-medium">PDF</th>
                             <th className="p-3 font-medium">Aktionen</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {checkIns.map((checkIn, index) => (
+                          {filteredCheckIns.map((checkIn, index) => (
                             <tr key={checkIn.id || index} className="border-b border-border/50 hover:bg-muted/30">
                               <td className="p-3">
                                 {checkIn.firstName} {checkIn.lastName}
@@ -301,12 +406,10 @@ const Admin = () => {
           </div>
         </main>
 
-        {/* Footer */}
         <footer className="w-full py-4 px-6 text-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Ihr Unternehmen. Alle Rechte vorbehalten.</p>
         </footer>
 
-        {/* Lösch-Bestätigungsdialog */}
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>

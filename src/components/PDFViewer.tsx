@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,34 @@ const PDFViewer = ({ document, onAccept, isAccepted }: PDFViewerProps) => {
   const handleAccept = () => {
     if (onAccept) {
       onAccept(document.id);
+    }
+  };
+
+  // Create blob URL from base64 for PDF viewing
+  const getPdfUrl = (base64Data: string): string => {
+    try {
+      // Handle the case when it might already be a blob URL
+      if (base64Data.startsWith('blob:')) {
+        return base64Data;
+      }
+      
+      // Extract base64 part from data URL
+      const base64Content = base64Data.split(',')[1];
+      const mimeType = base64Data.split(',')[0].split(':')[1].split(';')[0];
+      
+      // Convert base64 to binary
+      const binaryString = atob(base64Content);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      // Create blob and return URL
+      const blob = new Blob([bytes.buffer], { type: mimeType });
+      return URL.createObjectURL(blob);
+    } catch (error) {
+      console.error('Error creating blob URL:', error);
+      return '';
     }
   };
 
@@ -41,7 +70,7 @@ const PDFViewer = ({ document, onAccept, isAccepted }: PDFViewerProps) => {
       {showPDF && (
         <div className="w-full">
           <iframe 
-            src={document.file} 
+            src={getPdfUrl(document.file)} 
             className="w-full h-[90vh]" 
             title={document.name}
           />
