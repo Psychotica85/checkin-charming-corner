@@ -3,6 +3,13 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
+// Define IS_BROWSER property on window
+declare global {
+  interface Window {
+    IS_BROWSER?: boolean;
+  }
+}
+
 // Für Entwicklungszwecke: Lokalen Speicher vorbereiten, wenn er noch nicht existiert
 if (typeof window !== 'undefined') {
   // Flag setzen, dass wir uns in einer Browser-Umgebung befinden

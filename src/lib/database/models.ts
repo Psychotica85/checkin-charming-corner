@@ -27,11 +27,11 @@ export type CheckInData = {
   fullName: string;
   company: string;
   visitReason: string;
-  visitDate: Date;
+  visitDate: Date | string;
   visitTime: string;
   acceptedRules: boolean;
   acceptedDocuments: string[];
-  timestamp: Date;
+  timestamp: Date | string;
 };
 
 export interface ICheckIn {
@@ -41,11 +41,11 @@ export interface ICheckIn {
   fullName: string;
   company: string;
   visitReason: string;
-  visitDate: Date;
+  visitDate: Date | string;
   visitTime: string;
   acceptedRules: boolean;
   acceptedDocuments: string[];
-  timestamp: Date;
+  timestamp: Date | string;
   timezone: string;
   reportUrl?: string;
 }
