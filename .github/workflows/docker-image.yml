@@ -25,15 +25,22 @@ jobs:
       if: github.event_name != 'pull_request'
       uses: docker/login-action@v2
       with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        # Selbst wenn keine Secrets gesetzt sind, bauen wir das Image trotzdem
+        # aber überspringen den Login- und Push-Schritt bei fehlenden Credentials
+        username: ${{ secrets.DOCKERHUB_USERNAME || '' }}
+        password: ${{ secrets.DOCKERHUB_TOKEN || '' }}
+        # Überspringen, wenn keine Credentials vorhanden sind
+        registry: docker.io
+      continue-on-error: true
         
-    - name: Build and push Docker images
+    - name: Build Docker image
       uses: docker/build-push-action@v3
       with:
         context: .
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/checkin-system:latest
+        # Nur pushen, wenn wir Credentials haben und es kein Pull Request ist
+        push: ${{ github.event_name != 'pull_request' && secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+        tags: ${{ secrets.DOCKERHUB_USERNAME || 'local' }}/checkin-system:latest
         platforms: linux/amd64,linux/arm64
-        cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/checkin-system:buildcache
-        cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/checkin-system:buildcache,mode=max
+        # Nur Cache verwenden, wenn wir Credentials haben
+        cache-from: ${{ secrets.DOCKERHUB_USERNAME != '' && format('type=registry,ref={0}/checkin-system:buildcache', secrets.DOCKERHUB_USERNAME) || '' }}
+        cache-to: ${{ secrets.DOCKERHUB_USERNAME != '' && format('type=registry,ref={0}/checkin-system:buildcache,mode=max', secrets.DOCKERHUB_USERNAME) || '' }}

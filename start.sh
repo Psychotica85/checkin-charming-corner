@@ -46,6 +46,9 @@ echo "- DB_USER: $DB_USER"
 echo "- DB_NAME: $DB_NAME"
 echo "- DB_PASSWORD: $(if [ -n "$DB_PASSWORD" ]; then echo "gesetzt"; else echo "nicht gesetzt"; fi)"
 
+# Mache start.sh ausführbar
+chmod +x ./start.sh
+
 # Starte den Server
 echo "Starte das Besucher Check-In System..."
 node server.js
