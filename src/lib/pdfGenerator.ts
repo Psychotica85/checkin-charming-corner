@@ -51,8 +51,8 @@ export const generateCheckInReport = async (data: CheckInData, documents: any[],
         img.onerror = reject;
       });
       
-      // Maximale Breite für das Logo (reduziert auf 60px)
-      const maxWidth = 60;
+      // Maximale Breite für das Logo (reduziert auf 30px)
+      const maxWidth = 30;
       let imgWidth = img.width;
       let imgHeight = img.height;
       
@@ -70,7 +70,7 @@ export const generateCheckInReport = async (data: CheckInData, documents: any[],
       const xPosition = doc.internal.pageSize.getWidth() - imgWidth - rightMargin;
       
       // Position the logo at the same Y position as the address (align tops)
-      const logoYPosition = 20; // Same as initial yPosition for address
+      const logoYPosition = 10; // Same as initial yPosition for address - 10
       
       // Füge das Bild zum PDF hinzu
       doc.addImage(
