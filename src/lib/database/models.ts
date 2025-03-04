@@ -1,9 +1,10 @@
 
-// Importing types from Prisma client
-import type { Document, CheckIn, User, Role } from '@prisma/client';
+// We need to import the Prisma client instead of individual types
+import { Prisma } from '@prisma/client';
+import type { Role } from '@prisma/client';
 
-// Export Prisma types
-export type { Document as PrismaDocument, CheckIn as PrismaCheckIn, User as PrismaUser, Role };
+// Export Role enum from Prisma
+export { type Role };
 
 // Interface for Document model
 export interface IDocument {

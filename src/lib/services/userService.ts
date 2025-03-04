@@ -36,7 +36,7 @@ export const getUsers = async (): Promise<User[]> => {
         id: defaultAdmin.id,
         username: defaultAdmin.username,
         password: defaultAdmin.password,
-        role: mapPrismaRoleToFrontendRole(defaultAdmin.role),
+        role: mapPrismaRoleToFrontendRole(defaultAdmin.role) as 'admin' | 'user',
         createdAt: defaultAdmin.createdAt.toISOString()
       }];
     }
@@ -48,7 +48,7 @@ export const getUsers = async (): Promise<User[]> => {
       id: user.id,
       username: user.username,
       password: user.password,
-      role: mapPrismaRoleToFrontendRole(user.role),
+      role: mapPrismaRoleToFrontendRole(user.role) as 'admin' | 'user',
       createdAt: user.createdAt.toISOString()
     }));
   } catch (error) {
