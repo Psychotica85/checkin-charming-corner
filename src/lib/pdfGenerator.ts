@@ -39,32 +39,48 @@ export const generateCheckInReport = async (data: CheckInData, documents: any[],
   // Add company logo if available
   if (companySettings && companySettings.logo) {
     try {
-      const logoImg = companySettings.logo;
-      const maxWidth = 250;
-      
-      // Calculate image dimensions while maintaining aspect ratio
-      let imgWidth = 0;
-      let imgHeight = 0;
-      
-      // Create temporary image to get dimensions
+      // Konvertiere Base64-String in ein Image-Element
       const img = new Image();
-      img.src = logoImg;
+      img.src = companySettings.logo;
       
-      if (img.width > 0 && img.height > 0) {
-        // Calculate dimensions maintaining aspect ratio
-        if (img.width > maxWidth) {
-          imgWidth = maxWidth;
-          imgHeight = (img.height * maxWidth) / img.width;
-        } else {
-          imgWidth = img.width;
-          imgHeight = img.height;
-        }
-        
-        // Position the logo on the right side
-        doc.addImage(logoImg, 'JPEG', doc.internal.pageSize.getWidth() - imgWidth - 20, 20, imgWidth, imgHeight);
+      // Warten, bis das Bild geladen ist (wichtig für korrekte Dimensionen)
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+      
+      // Maximale Breite für das Logo
+      const maxWidth = 250;
+      let imgWidth = img.width;
+      let imgHeight = img.height;
+      
+      // Berechne Seitenverhältnis-getreue Dimensionen
+      if (imgWidth > maxWidth) {
+        const ratio = maxWidth / imgWidth;
+        imgWidth = maxWidth;
+        imgHeight = img.height * ratio;
       }
+      
+      console.log("Logo Dimensionen:", imgWidth, imgHeight);
+      
+      // Positioniere das Logo auf der rechten Seite
+      const rightMargin = 20;
+      const xPosition = doc.internal.pageSize.getWidth() - imgWidth - rightMargin;
+      
+      // Füge das Bild zum PDF hinzu
+      doc.addImage(
+        companySettings.logo,
+        'JPEG', 
+        xPosition,
+        20, // Top position
+        imgWidth,
+        imgHeight
+      );
+      
+      console.log("Logo erfolgreich hinzugefügt an Position:", xPosition, 20);
+      
     } catch (error) {
-      console.error("Error adding logo to PDF:", error);
+      console.error("Fehler beim Hinzufügen des Logos zum PDF:", error);
     }
   }
   
