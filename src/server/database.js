@@ -1,5 +1,5 @@
 
-import { createPool, Pool } from 'mysql2/promise';
+import mysql from 'mysql2/promise';
 
 // Konfiguration für die MySQL-Datenbankverbindung
 const dbConfig = {
@@ -27,7 +27,7 @@ export const getPool = async () => {
   console.log(`- Datenbank: ${dbConfig.database}`);
   
   try {
-    pool = createPool(dbConfig);
+    pool = mysql.createPool(dbConfig);
     
     // Teste die Verbindung
     const connection = await pool.getConnection();
@@ -113,9 +113,17 @@ export const initializeDatabase = async () => {
   }
 };
 
-// Wrapper für Datenbankoperationen
+// Typdefinitionen für Callback-Funktionen
 export const withDatabase = async (databaseFunction, operationName = 'Datenbankoperation') => {
   console.log(`Starte ${operationName}`);
+  
+  // Bestimme, ob wir im Server- oder Browser-Kontext sind
+  const isServer = typeof window === 'undefined';
+  
+  if (!isServer) {
+    console.error("FEHLER: Die Anwendung wird im Browser ausgeführt, aber die Datenbankoperationen müssen auf dem Server erfolgen.");
+    throw new Error("Datenbankzugriff im Browser nicht möglich. Diese Operation muss auf dem Server ausgeführt werden.");
+  }
   
   let connection = null;
   

@@ -1,5 +1,5 @@
 
-import { createPool, Pool } from 'mysql2/promise';
+import mysql from 'mysql2/promise';
 
 // Konfiguration für die MySQL-Datenbankverbindung
 const dbConfig = {
@@ -14,10 +14,10 @@ const dbConfig = {
 };
 
 // Pool für Datenbankverbindungen
-let pool: Pool | null = null;
+let pool: any = null;
 
 // Initialisiere den Verbindungspool
-const getPool = async (): Promise<Pool> => {
+const getPool = async (): Promise<any> => {
   if (pool) return pool;
   
   console.log("Erstelle MySQL-Verbindungspool mit folgender Konfiguration:");
@@ -27,7 +27,7 @@ const getPool = async (): Promise<Pool> => {
   console.log(`- Datenbank: ${dbConfig.database}`);
   
   try {
-    pool = createPool(dbConfig);
+    pool = mysql.createPool(dbConfig);
     
     // Teste die Verbindung
     const connection = await pool.getConnection();
