@@ -9,16 +9,20 @@ interface LogoProps {
 
 const Logo = ({ className }: LogoProps) => {
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadCompanyLogo = async () => {
       try {
+        setLoading(true);
         const settings = await getCompanySettings();
         if (settings && settings.logo) {
           setCompanyLogo(settings.logo);
         }
       } catch (error) {
         console.error("Failed to load company logo:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -27,11 +31,15 @@ const Logo = ({ className }: LogoProps) => {
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      {companyLogo ? (
+      {loading ? (
+        <div className="w-20 h-20 rounded-xl bg-muted/50 flex items-center justify-center animate-pulse">
+          <span className="sr-only">Logo wird geladen</span>
+        </div>
+      ) : companyLogo ? (
         <img 
           src={companyLogo} 
           alt="Company Logo" 
-          className="w-20 h-20 object-contain" // Doppelte Höhe: von h-10 auf h-20
+          className="w-20 h-20 object-contain"
         />
       ) : (
         <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center text-white font-bold text-lg shadow-lg">

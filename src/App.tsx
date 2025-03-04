@@ -16,13 +16,17 @@ declare global {
   }
 }
 
-// Create a client
+// Konfiguration für TanStack Query
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
+      // Fehler besser behandeln
+      onError: (error) => {
+        console.error("Query error:", error);
+      }
     },
   },
 });
@@ -32,18 +36,29 @@ const App = () => {
   
   useEffect(() => {
     console.log("App component mounted");
-    // Simulate initialization delay
+    // Kürzere Initialisierungsverzögerung
     const timer = setTimeout(() => {
       setIsLoading(false);
       console.log("App ready to render routes");
-    }, 1000);
+    }, 500);
+    
+    // Lokalen Speicher initialisieren, wenn er noch nicht existiert
+    if (typeof window !== 'undefined' && !localStorage.getItem('companySettings')) {
+      localStorage.setItem('companySettings', JSON.stringify({
+        id: '1',
+        address: 'Musterfirma GmbH\nMusterstraße 123\n12345 Musterstadt\nDeutschland',
+        logo: '',
+        updatedAt: new Date().toISOString()
+      }));
+      console.log("Lokale Unternehmenseinstellungen initialisiert");
+    }
     
     return () => clearTimeout(timer);
   }, []);
   
   console.log("App rendering, isLoading:", isLoading);
   
-  // Simple loading screen
+  // Simple loading screen with shorter timeout
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">

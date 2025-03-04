@@ -5,10 +5,14 @@ import App from './App.tsx'
 import './index.css'
 
 // Setze globales Flag für Browser-Umgebung
-window.IS_BROWSER = true;
+if (typeof window !== 'undefined') {
+  window.IS_BROWSER = true;
+}
 
 // Initialisierung des lokalen Speichers für die Browser-Umgebung
 const initializeLocalStorage = () => {
+  if (typeof window === 'undefined') return;
+  
   // Check-ins initialisieren
   if (!localStorage.getItem('checkIns')) {
     localStorage.setItem('checkIns', JSON.stringify([]));
@@ -23,10 +27,8 @@ const initializeLocalStorage = () => {
   if (!localStorage.getItem('companySettings')) {
     localStorage.setItem('companySettings', JSON.stringify({
       id: '1',
-      companyName: 'Beispielfirma GmbH',
-      address: 'Musterstraße 123, 12345 Berlin',
-      contactEmail: 'info@beispielfirma.de',
-      contactPhone: '+49 123 4567890',
+      address: 'Musterfirma GmbH\nMusterstraße 123\n12345 Musterstadt\nDeutschland',
+      logo: '',
       updatedAt: new Date().toISOString()
     }));
   }
@@ -37,8 +39,11 @@ const initializeLocalStorage = () => {
 // Browser-Umgebung initialisieren
 initializeLocalStorage();
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+// Vermeidet Probleme mit Server-seitigen Modulen im Browser
+if (typeof window !== 'undefined') {
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  );
+}

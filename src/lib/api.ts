@@ -27,6 +27,14 @@ export const SMTP_PASS = import.meta.env.VITE_SMTP_PASS || "password";
 export const SMTP_FROM = import.meta.env.VITE_SMTP_FROM || "noreply@example.com";
 export const SMTP_TO = import.meta.env.VITE_SMTP_TO || "admin@example.com";
 
+// Fallback-Werte für den Fall, dass Daten nicht geladen werden können
+const DEFAULT_COMPANY_SETTINGS = {
+  id: '1',
+  address: 'Musterfirma GmbH\nMusterstraße 123\n12345 Musterstadt\nDeutschland',
+  logo: null,
+  updatedAt: new Date().toISOString()
+};
+
 // Check-ins
 export const getCheckIns = async () => {
   try {
@@ -138,10 +146,31 @@ export const generatePdfReport = async (checkInId: string) => {
 // Company Settings
 export const getCompanySettings = async () => {
   try {
-    return await companyServiceGetCompanySettings();
+    // Prüfen, ob wir im Browser-Kontext sind
+    const isBrowser = typeof window !== 'undefined';
+    
+    if (isBrowser) {
+      console.log("Browser-Kontext erkannt, verwende lokalen Fallback für Unternehmenseinstellungen");
+      const localSettings = localStorage.getItem('companySettings');
+      if (localSettings) {
+        return JSON.parse(localSettings);
+      }
+      // Immer Standardwerte zurückgeben, wenn keine Einstellungen gefunden wurden
+      console.log("Verwende Standardwerte für Unternehmenseinstellungen");
+      return DEFAULT_COMPANY_SETTINGS;
+    }
+    
+    // Server-Kontext: Normale Datenbankabfrage
+    const settings = await companyServiceGetCompanySettings();
+    if (!settings) {
+      console.log("Keine Unternehmenseinstellungen in der Datenbank gefunden, verwende Standardwerte");
+      return DEFAULT_COMPANY_SETTINGS;
+    }
+    return settings;
   } catch (error) {
     console.error("API error - getCompanySettings:", error);
-    return null;
+    console.log("Fehler beim Laden der Unternehmenseinstellungen, verwende Standardwerte");
+    return DEFAULT_COMPANY_SETTINGS;
   }
 };
 
