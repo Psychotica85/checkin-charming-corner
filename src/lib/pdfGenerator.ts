@@ -20,6 +20,7 @@ export const generateCheckInReport = async (data: CheckInData, documents: any[],
   
   // Set initial Y position for content
   let yPosition = 20;
+  let addressHeight = 0;
   
   // Add company address if available
   if (companySettings && companySettings.address) {
@@ -33,7 +34,8 @@ export const generateCheckInReport = async (data: CheckInData, documents: any[],
       yPosition += 5;
     });
     
-    yPosition += 5; // Add some spacing
+    addressHeight = addressLines.length * 5;
+    yPosition += 5; // Add some spacing after address
   }
   
   // Add company logo if available
@@ -67,17 +69,20 @@ export const generateCheckInReport = async (data: CheckInData, documents: any[],
       const rightMargin = 20;
       const xPosition = doc.internal.pageSize.getWidth() - imgWidth - rightMargin;
       
+      // Position the logo at the same Y position as the address (align tops)
+      const logoYPosition = 20; // Same as initial yPosition for address
+      
       // Füge das Bild zum PDF hinzu
       doc.addImage(
         companySettings.logo,
         'JPEG', 
         xPosition,
-        20, // Top position
+        logoYPosition, 
         imgWidth,
         imgHeight
       );
       
-      console.log("Logo erfolgreich hinzugefügt an Position:", xPosition, 20);
+      console.log("Logo erfolgreich hinzugefügt an Position:", xPosition, logoYPosition);
       
     } catch (error) {
       console.error("Fehler beim Hinzufügen des Logos zum PDF:", error);
@@ -88,7 +93,9 @@ export const generateCheckInReport = async (data: CheckInData, documents: any[],
   if (!companySettings || (!companySettings.address && !companySettings.logo)) {
     yPosition = 20;
   } else {
-    yPosition += 10; // Add spacing after logo/address
+    // Use the maximum height between logo and address for positioning the title
+    // Add more spacing (15 units) to move the title further down
+    yPosition = Math.max(20 + addressHeight, yPosition) + 15;
   }
   
   // Add title
