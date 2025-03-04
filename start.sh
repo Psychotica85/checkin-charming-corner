@@ -10,14 +10,24 @@ echo "- PORT: $PORT"
 
 # Datenbankverbindung testen
 echo "Prüfe MySQL-Verbindung..."
-mysqladmin -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" ping --wait=30 || {
-  echo "Fehler: Kann keine Verbindung zur MySQL-Datenbank herstellen."
-  echo "Host: $DB_HOST"
-  echo "Port: $DB_PORT"
-  echo "Benutzer: $DB_USER"
-  exit 1
-}
-echo "MySQL-Verbindung erfolgreich"
+max_retries=30
+retry_count=0
+
+until mysqladmin -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" ping --silent || [ $retry_count -eq $max_retries ]; do
+    echo "Warte auf MySQL-Verbindung ($retry_count/$max_retries)..."
+    retry_count=$((retry_count+1))
+    sleep 2
+done
+
+if [ $retry_count -eq $max_retries ]; then
+    echo "Fehler: Konnte keine Verbindung zur MySQL-Datenbank herstellen."
+    echo "Host: $DB_HOST"
+    echo "Port: $DB_PORT"
+    echo "Benutzer: $DB_USER"
+    exit 1
+fi
+
+echo "MySQL-Verbindung erfolgreich hergestellt"
 
 # Umgebungsvariablen für SMTP anzeigen (ohne Passwort)
 echo "SMTP-Konfiguration:"

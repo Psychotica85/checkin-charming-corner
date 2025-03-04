@@ -2,7 +2,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { withDatabase } from '../lib/database/connection.js';
+import { withDatabase, initializeDatabase } from './database.js';
 import { isSmtpConfigured, SMTP_CONFIG } from './config.js';
 
 // ES Module-Fix für __dirname

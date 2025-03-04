@@ -1,98 +1,93 @@
 
 # Besucher Check-In System
 
-Ein digitales Check-In-System für Besucher mit PDF-Dokumentanzeige und -verwaltung.
+Ein modernes System zur Verwaltung von Besucher Check-Ins mit PDF-Dokumentenverwaltung.
 
-## Funktionen
+## Features
 
-- Besucher-Check-In mit persönlichen Informationen
-- Anzeige und Akzeptanz von PDF-Dokumenten (Datenschutz, Sicherheitsregeln, etc.)
-- Generierung von Check-In-Bestätigungen als PDF
-- Automatischer E-Mail-Versand der PDF-Bestätigung nach Check-In
-- Admin-Bereich zur Verwaltung von Dokumenten und Einsicht in Check-In-Daten
-- Responsive Design für Desktop, Tablet und Mobile
+- Besucher Check-In mit Erfassung persönlicher Daten
+- Automatische PDF-Generierung für Check-In-Bestätigungen
+- Verwaltung von Unternehmenseinstellungen und Logo
+- Dokumentenverwaltung für Besucherrichtlinien und andere Dokumente
+- Admin-Bereich mit Übersicht aller Check-Ins
+- Automatischer E-Mail-Versand nach Check-In
+- Vollständig containerisierte Anwendung mit Docker
 
-## Technologie-Stack
+## Technologien
 
-- React für die Frontend-Implementierung
-- Tailwind CSS für das UI-Design
-- Shadcn/UI für wiederverwendbare Komponenten
-- SQLite für die Datenspeicherung (im Produktionsmodus)
-- LocalStorage als Fallback im Browser-Modus
-- Docker für die Containerisierung
-- Nodemailer für den E-Mail-Versand
+- Frontend: React, TypeScript, Tailwind CSS, Shadcn UI
+- Backend: Node.js, Express
+- Datenbank: MySQL 8
+- Containerisierung: Docker, Docker Compose
+- PDF-Generierung: jsPDF
+- E-Mail-Versand: Nodemailer
 
-## Installation
+## Voraussetzungen
 
-### Mit Docker (empfohlen)
+- Docker und Docker Compose
+- Git
 
-1. Docker und Docker Compose installieren
-2. Repository klonen
-3. In das Repository-Verzeichnis wechseln
-4. SMTP-Einstellungen in der docker-compose.yml konfigurieren
-5. Docker-Container starten:
+## Installation und Start
 
-```bash
-docker-compose up -d
+1. Repository klonen:
+   ```
+   git clone https://github.com/username/besuchercheck-in.git
+   cd besuchercheck-in
+   ```
+
+2. Umgebungsvariablen anpassen (optional):
+   Bearbeiten Sie die Umgebungsvariablen in der `docker-compose.yml`-Datei nach Ihren Bedürfnissen.
+
+3. Anwendung starten:
+   ```
+   docker-compose up -d
+   ```
+
+4. Die Anwendung ist nun unter http://localhost:3000 verfügbar.
+
+## Konfiguration
+
+### SMTP für E-Mail-Versand
+
+Für den E-Mail-Versand müssen folgende Umgebungsvariablen in der `docker-compose.yml` konfiguriert werden:
+
+```yaml
+- VITE_SMTP_HOST=smtp.example.com
+- VITE_SMTP_PORT=587
+- VITE_SMTP_USER=user@example.com
+- VITE_SMTP_PASS=yourpassword
+- VITE_SMTP_FROM=noreply@example.com
+- VITE_SMTP_TO=recipient@example.com
+- VITE_SMTP_SUBJECT="Neuer Besucher Check-In"
 ```
 
-Die Anwendung ist dann unter http://localhost:3000 erreichbar.
+### Admin-Zugangsdaten
 
-### Manuelle Installation
+Die Standard-Zugangsdaten für den Admin-Bereich können in der `docker-compose.yml` angepasst werden:
 
-1. Node.js (v16+) installieren
-2. Repository klonen
-3. In das Repository-Verzeichnis wechseln
-4. Dependencies installieren:
+```yaml
+- VITE_ADMIN_USERNAME=admin
+- VITE_ADMIN_PASSWORD=admin
+```
+
+## Entwicklung
+
+Für die Entwicklung können Sie die Anwendung lokal starten:
 
 ```bash
 npm install
+npm run dev
 ```
 
-5. Umgebungsvariablen für SMTP konfigurieren
-6. Anwendung starten:
+## Datenpersistenz
 
-```bash
-npm run build
-npm run start
+Die MySQL-Datenbank verwendet ein Docker-Volume, um Daten dauerhaft zu speichern:
+
+```yaml
+volumes:
+  mysql_data:
 ```
-
-Die Anwendung ist dann unter http://localhost:3000 erreichbar.
-
-## Admin-Zugang
-
-Der standardmäßige Admin-Zugang ist:
-
-- Benutzername: admin
-- Passwort: admin
-
-Diese Zugangsdaten können über Umgebungsvariablen angepasst werden:
-
-```
-VITE_ADMIN_USERNAME=meinadmin
-VITE_ADMIN_PASSWORD=meinpasswort
-```
-
-## E-Mail-Konfiguration
-
-Für den E-Mail-Versand der Check-In-Bestätigungen müssen folgende Umgebungsvariablen konfiguriert werden:
-
-```
-VITE_SMTP_HOST=smtp.beispiel.de
-VITE_SMTP_PORT=587
-VITE_SMTP_USER=benutzer@beispiel.de
-VITE_SMTP_PASS=passwort
-VITE_SMTP_FROM=absender@beispiel.de
-VITE_SMTP_TO=empfaenger@beispiel.de
-VITE_SMTP_SUBJECT=Neuer Besucher Check-In
-```
-
-## Daten-Persistenz
-
-Im Produktionsmodus (Docker oder `npm run start`) werden die Daten in einer SQLite-Datenbank gespeichert. Die Datenbank wird im Verzeichnis `/app/data` im Container gespeichert und kann über ein Volume persistiert werden.
-
-Bei der Ausführung im Browser (Entwicklungsmodus) werden die Daten im LocalStorage des Browsers gespeichert.
 
 ## Lizenz
 
-Dieses Projekt ist unter der MIT-Lizenz lizenziert.
+[MIT](LICENSE)
