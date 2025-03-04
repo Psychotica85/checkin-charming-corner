@@ -1,134 +1,155 @@
 
-import type { Database } from 'better-sqlite3';
+import { createPool, Pool } from 'mysql2/promise';
 
-export type DatabaseCallback<T> = (db: Database) => T;
-export type BrowserCallback<T> = () => T;
+// Konfiguration für die MySQL-Datenbankverbindung
+const dbConfig = {
+  host: process.env.DB_HOST || 'mysql', // Container-Name im Docker-Netzwerk
+  port: parseInt(process.env.DB_PORT || '3306'),
+  user: process.env.DB_USER || 'checkin',
+  password: process.env.DB_PASSWORD || 'checkin', 
+  database: process.env.DB_NAME || 'checkin_db',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+};
 
-// Flag zur Erkennung der Server-Umgebung
-const isServer = typeof window === 'undefined';
+// Pool für Datenbankverbindungen
+let pool: Pool | null = null;
 
-// Wrapper-Funktion, die die Datenbankfunktion verwendet und nur im Notfall auf Browser-Fallback zurückgreift
-export const withDatabase = <T>(
-  serverFunction: DatabaseCallback<T>,
-  browserFunction: BrowserCallback<T>
-): T => {
-  console.log(`Running in ${isServer ? 'server' : 'browser'} environment`);
+// Initialisiere den Verbindungspool
+const getPool = async (): Promise<Pool> => {
+  if (pool) return pool;
   
-  // Wenn wir im Browser sind, wird eine Warnung ausgegeben, aber keine Fallback-Funktion ausgeführt
-  if (!isServer) {
-    console.error("FEHLER: Die Anwendung wird im Browser ausgeführt, aber die Datenbank ist nur auf dem Server verfügbar.");
-    console.error("In dieser Umgebung kann nicht auf die Datenbank zugegriffen werden.");
-    throw new Error("Datenbankzugriff im Browser nicht möglich. Bitte stellen Sie sicher, dass der Server korrekt konfiguriert ist.");
-  }
+  console.log("Erstelle MySQL-Verbindungspool mit folgender Konfiguration:");
+  console.log(`- Host: ${dbConfig.host}`);
+  console.log(`- Port: ${dbConfig.port}`);
+  console.log(`- Benutzer: ${dbConfig.user}`);
+  console.log(`- Datenbank: ${dbConfig.database}`);
   
   try {
-    console.log("Verbinde zur SQLite-Datenbank...");
+    pool = createPool(dbConfig);
     
-    // Dynamischer Import von better-sqlite3
-    const better_sqlite3 = require('better-sqlite3');
+    // Teste die Verbindung
+    const connection = await pool.getConnection();
+    console.log("MySQL-Verbindung erfolgreich hergestellt");
+    connection.release();
     
-    try {
-      // Absoluter Pfad zur Datenbank mit korrekter Berechtigung
-      const dbPath = '/app/data/database.sqlite';
-      console.log(`Verbindung zur Datenbank unter: ${dbPath}`);
-      
-      // Datenbankverbindung mit detaillierter Fehlerbehandlung
-      const db = new better_sqlite3(dbPath, { 
-        verbose: console.log,
-        fileMustExist: false
-      });
-      
-      // Debug-Ausgabe für Datenbankstatus
-      console.log(`Datenbank-Status: ${db ? 'Verbunden' : 'Nicht verbunden'}`);
-      
-      // Datenbank-Berechtigungen testen
-      try {
-        db.pragma('journal_mode = WAL');
-        console.log("Datenbank-Schreibtest erfolgreich (PRAGMA-Befehl)");
-      } catch (pragmaError) {
-        console.error("Fehler bei Datenbank-Schreibtest:", pragmaError);
-        throw pragmaError;
-      }
-      
-      // Schema erstellen (wenn es noch nicht existiert)
-      db.exec(`
-        CREATE TABLE IF NOT EXISTS checkins (
-          id TEXT PRIMARY KEY,
-          firstName TEXT,
-          lastName TEXT,
-          fullName TEXT NOT NULL,
-          company TEXT NOT NULL,
-          visitReason TEXT,
-          visitDate TEXT,
-          visitTime TEXT,
-          acceptedRules INTEGER DEFAULT 0,
-          acceptedDocuments TEXT,
-          timestamp TEXT NOT NULL,
-          timezone TEXT NOT NULL,
-          pdfData TEXT
-        );
-        
-        CREATE TABLE IF NOT EXISTS documents (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          fileData TEXT NOT NULL,
-          uploadedAt TEXT NOT NULL
-        );
-        
-        CREATE TABLE IF NOT EXISTS company_settings (
-          id INTEGER PRIMARY KEY,
-          companyName TEXT,
-          address TEXT,
-          contactEmail TEXT,
-          contactPhone TEXT,
-          logo TEXT,
-          updatedAt TEXT
-        );
-      `);
-      
-      console.log("Datenbankschema erfolgreich erstellt");
-      
-      // Führe die Funktion mit der Datenbankverbindung aus
-      try {
-        const result = serverFunction(db);
-        return result;
-      } finally {
-        // Schließe die Datenbankverbindung
-        db.close();
-        console.log("Datenbankverbindung geschlossen");
-      }
-    } catch (dbError) {
-      console.error('KRITISCHER FEHLER: Datenbankverbindung fehlgeschlagen:', dbError);
-      console.error('Stack-Trace:', dbError.stack);
-      
-      // Dateisysteminformationen anzeigen für bessere Diagnose
-      const fs = require('fs');
-      
-      try {
-        if (fs.existsSync('/app/data')) {
-          console.log('Datenverzeichnis existiert. Verzeichnisinhalt:');
-          const files = fs.readdirSync('/app/data');
-          console.log(files.length > 0 ? files.join(', ') : 'Leeres Verzeichnis');
-          
-          // Berechtigungen prüfen
-          const stats = fs.statSync('/app/data');
-          console.log(`Verzeichnisberechtigungen: ${stats.mode}`);
-          console.log(`Benutzer/Gruppe: ${stats.uid}/${stats.gid}`);
-        } else {
-          console.error('Datenverzeichnis "/app/data" existiert nicht!');
-        }
-      } catch (fsError) {
-        console.error('Fehler beim Lesen des Datenverzeichnisses:', fsError);
-      }
-      
-      // Keine Fallback-Funktion mehr aufrufen, stattdessen Fehler werfen
-      throw new Error(`Datenbankverbindung fehlgeschlagen: ${dbError.message}`);
+    return pool;
+  } catch (error) {
+    console.error("Fehler beim Erstellen des MySQL-Verbindungspools:", error);
+    throw error;
+  }
+};
+
+// Schema-Initialisierung
+export const initializeDatabase = async (): Promise<void> => {
+  console.log("Initialisiere Datenbankschema...");
+  const pool = await getPool();
+  
+  try {
+    const conn = await pool.getConnection();
+    
+    // Erstelle Tabellen, wenn sie nicht existieren
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS checkins (
+        id VARCHAR(50) PRIMARY KEY,
+        firstName VARCHAR(100),
+        lastName VARCHAR(100),
+        fullName VARCHAR(200) NOT NULL,
+        company VARCHAR(200) NOT NULL,
+        visitReason TEXT,
+        visitDate VARCHAR(30),
+        visitTime VARCHAR(30),
+        acceptedRules BOOLEAN DEFAULT FALSE,
+        acceptedDocuments TEXT,
+        timestamp VARCHAR(50) NOT NULL,
+        timezone VARCHAR(50) NOT NULL,
+        pdfData LONGTEXT
+      );
+    `);
+    
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS documents (
+        id VARCHAR(50) PRIMARY KEY,
+        name VARCHAR(200) NOT NULL,
+        description TEXT,
+        file LONGTEXT NOT NULL,
+        createdAt VARCHAR(50) NOT NULL
+      );
+    `);
+    
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS company_settings (
+        id VARCHAR(50) PRIMARY KEY,
+        address TEXT,
+        logo LONGTEXT,
+        updatedAt VARCHAR(50) NOT NULL
+      );
+    `);
+    
+    // Füge Standardeinstellungen ein, wenn keine vorhanden sind
+    const [rows] = await conn.query('SELECT COUNT(*) as count FROM company_settings');
+    const count = (rows as any)[0].count;
+    
+    if (count === 0) {
+      await conn.query(`
+        INSERT INTO company_settings (id, address, logo, updatedAt)
+        VALUES (?, ?, ?, ?);
+      `, [
+        '1',
+        'Musterfirma GmbH\nMusterstraße 123\n12345 Musterstadt\nDeutschland',
+        '',
+        new Date().toISOString()
+      ]);
+      console.log("Standardeinstellungen für Unternehmen angelegt");
     }
-  } catch (importError) {
-    console.error('KRITISCHER FEHLER: better-sqlite3 Import fehlgeschlagen:', importError);
-    console.error('Stack-Trace:', importError.stack);
     
-    // Keine Fallback-Funktion mehr aufrufen, stattdessen Fehler werfen
-    throw new Error(`Fehler beim Laden der Datenbankbibliothek: ${importError.message}`);
+    console.log("Datenbankschema erfolgreich initialisiert");
+    conn.release();
+  } catch (error) {
+    console.error("Fehler bei der Initialisierung des Datenbankschemas:", error);
+    throw error;
+  }
+};
+
+// Typdefinitionen für Callback-Funktionen
+export type DatabaseCallback<T> = (conn: any) => Promise<T>;
+
+// Haupt-Wrapper-Funktion für Datenbankoperationen
+export const withDatabase = async <T>(
+  databaseFunction: DatabaseCallback<T>
+): Promise<T> => {
+  console.log("Starte Datenbankoperation");
+  
+  // Bestimme, ob wir im Server- oder Browser-Kontext sind
+  const isServer = typeof window === 'undefined';
+  
+  if (!isServer) {
+    console.error("FEHLER: Die Anwendung wird im Browser ausgeführt, aber die Datenbankoperationen müssen auf dem Server erfolgen.");
+    throw new Error("Datenbankzugriff im Browser nicht möglich. Diese Operation muss auf dem Server ausgeführt werden.");
+  }
+  
+  let connection = null;
+  
+  try {
+    // Hole Pool und Verbindung
+    const pool = await getPool();
+    connection = await pool.getConnection();
+    console.log("Datenbankverbindung hergestellt");
+    
+    // Führe die übergebene Funktion aus
+    const result = await databaseFunction(connection);
+    console.log("Datenbankoperation erfolgreich abgeschlossen");
+    
+    return result;
+  } catch (error) {
+    console.error("Fehler bei Datenbankoperation:", error);
+    throw error;
+  } finally {
+    // Verbindung zurückgeben
+    if (connection) {
+      connection.release();
+      console.log("Datenbankverbindung freigegeben");
+    }
   }
 };

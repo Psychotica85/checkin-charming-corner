@@ -13,53 +13,36 @@ const DEFAULT_SETTINGS: CompanySettings = {
 // Holt die aktuellen Unternehmenseinstellungen
 export const getCompanySettings = async (): Promise<CompanySettings> => {
   return withDatabase(
-    // Server-Umgebung (SQLite)
-    (db) => {
-      console.log("Lade Unternehmenseinstellungen aus Datenbank");
+    // Server-Umgebung (MySQL)
+    async (conn) => {
+      console.log("Lade Unternehmenseinstellungen aus MySQL");
       
       try {
-        // Erstelle die Tabelle, falls sie noch nicht existiert
-        db.prepare(`
-          CREATE TABLE IF NOT EXISTS company_settings (
-            id TEXT PRIMARY KEY,
-            address TEXT,
-            logo TEXT,
-            updatedAt TEXT
-          )
-        `).run();
-        
         // Prüfe, ob bereits Einstellungen existieren
-        const settings = db.prepare('SELECT * FROM company_settings WHERE id = ?').get('1');
+        const [rows] = await conn.query('SELECT * FROM company_settings WHERE id = ?', ['1']);
         
-        if (settings) {
+        if (rows && (rows as any[]).length > 0) {
           console.log("Vorhandene Unternehmenseinstellungen geladen");
-          return settings as CompanySettings;
+          return (rows as any[])[0] as CompanySettings;
         } else {
           // Standardeinstellungen einfügen
-          const stmt = db.prepare(`
+          await conn.query(`
             INSERT INTO company_settings (id, address, logo, updatedAt)
             VALUES (?, ?, ?, ?)
-          `);
-          
-          stmt.run(
+          `, [
             DEFAULT_SETTINGS.id,
             DEFAULT_SETTINGS.address,
             DEFAULT_SETTINGS.logo,
             DEFAULT_SETTINGS.updatedAt
-          );
+          ]);
           
           console.log("Standardeinstellungen in Datenbank angelegt");
           return DEFAULT_SETTINGS;
         }
       } catch (error) {
         console.error('Fehler beim Laden der Unternehmenseinstellungen:', error);
-        throw error; // Fehler weiterleiten
+        throw error;
       }
-    },
-    // Browser-Fallback (wird nicht verwendet)
-    () => {
-      console.error("Kritischer Fehler: Unternehmenseinstellungen können im Browser nicht geladen werden");
-      throw new Error("Datenbankzugriff im Browser nicht möglich");
     }
   );
 };
@@ -77,23 +60,21 @@ export const updateCompanySettings = async (settings: Partial<CompanySettings>):
     };
     
     return withDatabase(
-      // Server-Umgebung (SQLite)
-      (db) => {
-        console.log("Aktualisiere Unternehmenseinstellungen in Datenbank");
+      // Server-Umgebung (MySQL)
+      async (conn) => {
+        console.log("Aktualisiere Unternehmenseinstellungen in MySQL");
         
         try {
-          const stmt = db.prepare(`
+          await conn.query(`
             UPDATE company_settings
             SET address = ?, logo = ?, updatedAt = ?
             WHERE id = ?
-          `);
-          
-          stmt.run(
+          `, [
             updatedSettings.address,
             updatedSettings.logo,
             updatedSettings.updatedAt,
             updatedSettings.id
-          );
+          ]);
           
           console.log("Unternehmenseinstellungen erfolgreich aktualisiert");
           return {
@@ -102,13 +83,8 @@ export const updateCompanySettings = async (settings: Partial<CompanySettings>):
           };
         } catch (error) {
           console.error('Fehler beim Aktualisieren der Unternehmenseinstellungen:', error);
-          throw error; // Fehler weiterleiten
+          throw error;
         }
-      },
-      // Browser-Fallback (wird nicht verwendet)
-      () => {
-        console.error("Kritischer Fehler: Unternehmenseinstellungen können im Browser nicht aktualisiert werden");
-        throw new Error("Datenbankzugriff im Browser nicht möglich");
       }
     );
   } catch (error) {

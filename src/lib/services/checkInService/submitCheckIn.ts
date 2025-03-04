@@ -80,9 +80,9 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
     
     console.log('Speichere Check-in in der Datenbank...');
     return withDatabase(
-      // Diese Funktion wird im Server ausgeführt
-      (db) => {
-        console.log("Speichere Check-in in SQLite");
+      // Diese Funktion wird im Server ausgeführt mit MySQL
+      async (conn) => {
+        console.log("Speichere Check-in in MySQL");
         
         // CheckIn-Daten vorbereiten
         const checkInData = {
@@ -94,8 +94,8 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
           pdfData: pdfBase64
         };
         
-        // In SQLite-Datenbank speichern
-        const stmt = db.prepare(`
+        // In MySQL-Datenbank speichern
+        await conn.query(`
           INSERT INTO checkins (
             id, firstName, lastName, fullName, company, 
             visitReason, visitDate, visitTime, acceptedRules, 
@@ -105,9 +105,7 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
             ?, ?, ?, ?, 
             ?, ?, ?, ?
           )
-        `);
-        
-        const result = stmt.run(
+        `, [
           checkInData.id,
           checkInData.firstName || null,
           checkInData.lastName || null,
@@ -121,9 +119,9 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
           checkInData.timestamp,
           checkInData.timezone,
           checkInData.pdfData
-        );
+        ]);
         
-        console.log("Datenbankoperation erfolgreich:", result);
+        console.log("Datenbankoperation erfolgreich");
         
         // URL für PDF-Vorschau erstellen
         const pdfUrl = URL.createObjectURL(pdfBlob);
@@ -138,11 +136,6 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
           message: `Check-in erfolgreich gespeichert. ${emailStatus} Willkommen!`,
           reportUrl: pdfUrl
         };
-      },
-      // Browser-Fallback (wird nicht verwendet)
-      () => {
-        console.error("Kritischer Fehler: Datenbankoperation im Browser nicht möglich");
-        throw new Error("Datenbankzugriff im Browser nicht möglich");
       }
     );
   } catch (error) {

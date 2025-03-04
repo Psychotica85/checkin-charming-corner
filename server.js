@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { initializeDatabase } from './src/lib/database/connection.js';
 
 // ES Module-Fix für __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -30,43 +31,6 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Stelle sicher, dass das Datenverzeichnis existiert und Schreibrechte hat
-const dataDir = path.join('/app', 'data');
-try {
-  if (!fs.existsSync(dataDir)) {
-    console.log(`Erstelle Datenverzeichnis: ${dataDir}`);
-    fs.mkdirSync(dataDir, { recursive: true, mode: 0o777 });
-  }
-  
-  // Verzeichnisberechtigungen prüfen und ggf. korrigieren
-  fs.chmodSync(dataDir, 0o777);
-  
-  // Verzeichnisinhalt anzeigen
-  console.log(`Datenverzeichnis existiert: ${dataDir}`);
-  const files = fs.readdirSync(dataDir);
-  console.log(`Dateien im Datenverzeichnis: ${files.length > 0 ? files.join(', ') : 'keine'}`);
-  
-  // Detaillierte Verzeichnisinformationen
-  const stats = fs.statSync(dataDir);
-  console.log(`Verzeichnisberechtigungen: ${stats.mode}`);
-  console.log(`Verzeichnisbesitzer: ${stats.uid}:${stats.gid}`);
-} catch (error) {
-  console.error(`Fehler beim Zugriff auf Datenverzeichnis: ${error.message}`);
-  console.error(error.stack);
-}
-
-// Teste Schreibberechtigung
-try {
-  const testFile = path.join(dataDir, 'test.txt');
-  fs.writeFileSync(testFile, 'Test Schreibberechtigung');
-  console.log(`Schreibtest erfolgreich: ${testFile}`);
-  // Datei nach Test löschen
-  fs.unlinkSync(testFile);
-} catch (error) {
-  console.error(`Fehler beim Schreibtest: ${error.message}`);
-  console.error(error.stack);
-}
-
 // Logging Middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
@@ -78,20 +42,8 @@ app.use(express.static(path.join(__dirname, 'dist')));
 
 // Health-Check-Route
 app.get('/api/health', (req, res) => {
-  // Datenbankverzeichnis prüfen
-  let dbStatus = 'unbekannt';
-  let dbFiles = [];
-  
-  try {
-    if (fs.existsSync(dataDir)) {
-      dbStatus = 'verfügbar';
-      dbFiles = fs.readdirSync(dataDir);
-    } else {
-      dbStatus = 'nicht verfügbar';
-    }
-  } catch (error) {
-    dbStatus = `Fehler: ${error.message}`;
-  }
+  // Datenbankstatus
+  let dbStatus = 'nicht verfügbar';
   
   // SMTP-Konfiguration prüfen
   const smtpConfigured = process.env.VITE_SMTP_HOST && 
@@ -109,13 +61,10 @@ app.get('/api/health', (req, res) => {
       SMTP_FROM: process.env.VITE_SMTP_FROM || 'nicht gesetzt',
       SMTP_TO: process.env.VITE_SMTP_TO || 'nicht gesetzt',
       SMTP_PASS: process.env.VITE_SMTP_PASS ? 'gesetzt' : 'nicht gesetzt',
-    },
-    paths: {
-      dataDir,
-      dataStatus: dbStatus,
-      dataFiles: dbFiles,
-      cwd: process.cwd(),
-      __dirname
+      DB_HOST: process.env.DB_HOST || 'nicht gesetzt',
+      DB_PORT: process.env.DB_PORT || 'nicht gesetzt',
+      DB_USER: process.env.DB_USER || 'nicht gesetzt',
+      DB_NAME: process.env.DB_NAME || 'nicht gesetzt'
     }
   });
 });
@@ -192,6 +141,33 @@ app.get('/api/test-smtp', async (req, res) => {
   }
 });
 
+// API-Route für Datenbanktest
+app.get('/api/test-db', async (req, res) => {
+  try {
+    // Datenbankverbindung testen durch Abfrage der Anzahl der Check-ins
+    const { withDatabase } = await import('./src/lib/database/connection.js');
+    
+    const result = await withDatabase(async (conn) => {
+      const [rows] = await conn.query('SELECT COUNT(*) as count FROM checkins');
+      return rows;
+    });
+    
+    res.json({
+      success: true,
+      message: 'Datenbankverbindung erfolgreich',
+      data: result
+    });
+  } catch (error) {
+    console.error('Datenbanktest fehlgeschlagen:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Datenbanktest fehlgeschlagen',
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 // Alle Anfragen, die nicht auf statische Dateien zugreifen, an index.html weiterleiten (für SPA)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
@@ -207,33 +183,56 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Server starten
-app.listen(PORT, () => {
-  console.log(`\n=== Gäste Check-In System ===`);
-  console.log(`Server läuft auf Port ${PORT}`);
-  console.log(`Umgebung: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Admin-Benutzer: ${process.env.VITE_ADMIN_USERNAME || 'admin'}`);
-  
-  // SMTP-Konfiguration überprüfen
-  const smtpConfigured = process.env.VITE_SMTP_HOST && 
-                         process.env.VITE_SMTP_USER && 
-                         process.env.VITE_SMTP_PASS;
-  
-  if (smtpConfigured) {
-    console.log(`SMTP konfiguriert: ${process.env.VITE_SMTP_HOST}:${process.env.VITE_SMTP_PORT}`);
-    console.log(`SMTP Benutzer: ${process.env.VITE_SMTP_USER}`);
-    console.log(`E-Mail-Empfänger: ${process.env.VITE_SMTP_TO || 'nicht gesetzt'}`);
-  } else {
-    console.log('SMTP nicht vollständig konfiguriert:');
-    console.log(`- Host: ${process.env.VITE_SMTP_HOST || 'nicht gesetzt'}`);
-    console.log(`- Port: ${process.env.VITE_SMTP_PORT || 'nicht gesetzt'}`);
-    console.log(`- User: ${process.env.VITE_SMTP_USER || 'nicht gesetzt'}`);
-    console.log(`- From: ${process.env.VITE_SMTP_FROM || 'nicht gesetzt'}`);
-    console.log(`- To: ${process.env.VITE_SMTP_TO || 'nicht gesetzt'}`);
-    console.log('E-Mail-Versand wird simuliert');
+// Starte den Server nach Initialisierung der Datenbank
+const startServer = async () => {
+  try {
+    // Initialisiere Datenbankschema
+    console.log("Initialisiere Datenbankschema...");
+    await initializeDatabase();
+    console.log("Datenbankschema erfolgreich initialisiert");
+    
+    // Starte den Server
+    app.listen(PORT, () => {
+      console.log(`\n=== Gäste Check-In System ===`);
+      console.log(`Server läuft auf Port ${PORT}`);
+      console.log(`Umgebung: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`Admin-Benutzer: ${process.env.VITE_ADMIN_USERNAME || 'admin'}`);
+      
+      // Datenbank-Konfiguration überprüfen
+      console.log('Datenbank-Konfiguration:');
+      console.log(`- Host: ${process.env.DB_HOST || 'mysql'}`);
+      console.log(`- Port: ${process.env.DB_PORT || '3306'}`);
+      console.log(`- Benutzer: ${process.env.DB_USER || 'checkin'}`);
+      console.log(`- Datenbank: ${process.env.DB_NAME || 'checkin_db'}`);
+      
+      // SMTP-Konfiguration überprüfen
+      const smtpConfigured = process.env.VITE_SMTP_HOST && 
+                             process.env.VITE_SMTP_USER && 
+                             process.env.VITE_SMTP_PASS;
+      
+      if (smtpConfigured) {
+        console.log(`SMTP konfiguriert: ${process.env.VITE_SMTP_HOST}:${process.env.VITE_SMTP_PORT}`);
+        console.log(`SMTP Benutzer: ${process.env.VITE_SMTP_USER}`);
+        console.log(`E-Mail-Empfänger: ${process.env.VITE_SMTP_TO || 'nicht gesetzt'}`);
+      } else {
+        console.log('SMTP nicht vollständig konfiguriert:');
+        console.log(`- Host: ${process.env.VITE_SMTP_HOST || 'nicht gesetzt'}`);
+        console.log(`- Port: ${process.env.VITE_SMTP_PORT || 'nicht gesetzt'}`);
+        console.log(`- User: ${process.env.VITE_SMTP_USER || 'nicht gesetzt'}`);
+        console.log(`- From: ${process.env.VITE_SMTP_FROM || 'nicht gesetzt'}`);
+        console.log(`- To: ${process.env.VITE_SMTP_TO || 'nicht gesetzt'}`);
+        console.log('E-Mail-Versand wird simuliert');
+      }
+      
+      console.log('\nZugriff auf die Anwendung:');
+      console.log(`- Browser: http://localhost:${PORT}`);
+      console.log('=====================================\n');
+    });
+  } catch (error) {
+    console.error("Kritischer Fehler beim Serverstart:", error);
+    process.exit(1);
   }
-  
-  console.log('\nZugriff auf die Anwendung:');
-  console.log(`- Browser: http://localhost:${PORT}`);
-  console.log('=====================================\n');
-});
+};
+
+// Starte den Server
+startServer();

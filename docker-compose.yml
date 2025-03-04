@@ -24,10 +24,39 @@ services:
       - VITE_SMTP_FROM=noreply@example.com
       - VITE_SMTP_TO=recipient@example.com
       - VITE_SMTP_SUBJECT="Neuer Besucher Check-In"
-    volumes:
-      - ./data:/app/data:rw
+      
+      # Datenbank-Konfiguration
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=checkin
+      - DB_PASSWORD=checkin
+      - DB_NAME=checkin_db
+    depends_on:
+      - mysql
     restart: unless-stopped
     # Für einige Umgebungen können privilegierte Rechte helfen
     # privileged: true
     # Für einige Host-Systeme kann eine spezifische Benutzer-ID helfen
     # user: "1000:1000"
+
+  mysql:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=checkin_db
+      - MYSQL_USER=checkin
+      - MYSQL_PASSWORD=checkin
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "checkin", "-pcheckin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
