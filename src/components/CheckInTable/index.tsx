@@ -19,6 +19,7 @@ const CheckInTable = () => {
   const [timeFilter, setTimeFilter] = useState('');
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [selectedCheckIn, setSelectedCheckIn] = useState<CheckIn | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     loadCheckIns();
@@ -73,7 +74,14 @@ const CheckInTable = () => {
 
   const handleViewPDF = (checkIn: CheckIn) => {
     setSelectedCheckIn(checkIn);
+    setDialogOpen(true);
     handleGeneratePDF(checkIn.id as string);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setSelectedCheckIn(null);
+    setPdfUrl(null);
   };
 
   const filteredCheckIns = filterCheckIns(
@@ -125,11 +133,19 @@ const CheckInTable = () => {
         </div>
       )}
 
-      <Dialog open={selectedCheckIn !== null} onOpenChange={(open) => !open && setSelectedCheckIn(null)}>
-        <CheckInPDFDialog 
-          checkIn={selectedCheckIn} 
-          pdfUrl={pdfUrl} 
-        />
+      <Dialog 
+        open={dialogOpen} 
+        onOpenChange={(open) => {
+          if (!open) handleDialogClose();
+          setDialogOpen(open);
+        }}
+      >
+        {selectedCheckIn && (
+          <CheckInPDFDialog 
+            checkIn={selectedCheckIn} 
+            pdfUrl={pdfUrl} 
+          />
+        )}
       </Dialog>
     </div>
   );

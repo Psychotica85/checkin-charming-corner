@@ -17,11 +17,15 @@ const CheckInPDFDialog = ({ checkIn, pdfUrl }: CheckInPDFDialogProps) => {
       <DialogHeader>
         <DialogTitle>PDF-Bericht für {checkIn.fullName}</DialogTitle>
       </DialogHeader>
-      {pdfUrl && (
-        <div className="h-full overflow-hidden">
+      <div className="h-full overflow-hidden mt-4">
+        {pdfUrl ? (
           <PDFViewer url={pdfUrl} />
-        </div>
-      )}
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <p>Lade PDF-Bericht...</p>
+          </div>
+        )}
+      </div>
     </DialogContent>
   );
 };
