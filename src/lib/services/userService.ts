@@ -63,7 +63,7 @@ export const getUsers = async (): Promise<User[]> => {
         id: '1',
         username: 'admin',
         password: 'admin',
-        role: 'admin',
+        role: 'admin' as 'admin' | 'user',
         createdAt: new Date().toISOString()
       };
       localStorage.setItem('users', JSON.stringify([defaultAdmin]));

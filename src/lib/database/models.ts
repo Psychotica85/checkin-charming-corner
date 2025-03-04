@@ -1,10 +1,6 @@
 
 // We need to import the Prisma client instead of individual types
 import { Prisma } from '@prisma/client';
-import type { Role } from '@prisma/client';
-
-// Export Role enum from Prisma
-export { type Role };
 
 // Interface for Document model
 export interface IDocument {
