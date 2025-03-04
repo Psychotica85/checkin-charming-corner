@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { getCompanySettings, updateCompanySettings } from "@/lib/api";
 import { CompanySettings } from "@/lib/database/models";
@@ -16,6 +17,8 @@ const CompanySettingsForm = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoInputMethod, setLogoInputMethod] = useState<'upload' | 'base64'>('upload');
+  const [base64Input, setBase64Input] = useState('');
 
   useEffect(() => {
     loadSettings();
@@ -28,6 +31,7 @@ const CompanySettingsForm = () => {
       setSettings(data);
       if (data.logo) {
         setLogoPreview(data.logo);
+        setBase64Input(data.logo);
       }
     } catch (error) {
       console.error("Error loading company settings:", error);
@@ -72,9 +76,38 @@ const CompanySettingsForm = () => {
           logo: base64
         });
         setLogoPreview(base64);
+        setBase64Input(base64);
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleBase64InputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setBase64Input(value);
+    
+    // Validate if it's a proper base64 image
+    if (value.startsWith('data:image/') && value.includes('base64,')) {
+      if (settings) {
+        setSettings({
+          ...settings,
+          logo: value
+        });
+        setLogoPreview(value);
+      }
+    } else if (value === '') {
+      // Clear the logo if input is empty
+      if (settings) {
+        setSettings({
+          ...settings,
+          logo: ''
+        });
+        setLogoPreview(null);
+      }
+    } else {
+      // Invalid input
+      toast.error("Ungültiges Base64-Format. Format sollte data:image/png;base64,... oder data:image/jpeg;base64,... sein");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,18 +162,42 @@ const CompanySettingsForm = () => {
           </div>
 
           {/* Firmenlogo */}
-          <div className="space-y-2">
-            <Label htmlFor="logo">Firmenlogo (max. 2MB)</Label>
-            <Input
-              id="logo"
-              type="file"
-              accept="image/*"
-              onChange={handleLogoChange}
-              className="cursor-pointer"
-            />
-            <p className="text-xs text-muted-foreground">
-              Das Logo wird auf der rechten Seite des PDFs angezeigt (max. Breite 250px).
-            </p>
+          <div className="space-y-4">
+            <Label>Firmenlogo</Label>
+            <Tabs 
+              value={logoInputMethod} 
+              onValueChange={(value) => setLogoInputMethod(value as 'upload' | 'base64')}
+              className="w-full"
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="upload">Datei hochladen</TabsTrigger>
+                <TabsTrigger value="base64">Base64 Code eingeben</TabsTrigger>
+              </TabsList>
+              <TabsContent value="upload" className="space-y-2">
+                <Input
+                  id="logo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoChange}
+                  className="cursor-pointer"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Wählen Sie eine JPG- oder PNG-Datei (max. 2MB).
+                </p>
+              </TabsContent>
+              <TabsContent value="base64" className="space-y-2">
+                <Textarea
+                  id="base64Logo"
+                  rows={3}
+                  placeholder="data:image/png;base64,..."
+                  value={base64Input || ''}
+                  onChange={handleBase64InputChange}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Geben Sie einen Base64-codierten Bildstring im Format data:image/png;base64,... ein.
+                </p>
+              </TabsContent>
+            </Tabs>
           </div>
 
           {/* Logo preview */}
