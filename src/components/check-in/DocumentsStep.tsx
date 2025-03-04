@@ -1,14 +1,6 @@
-
 import { cn } from "@/lib/utils";
 import PDFViewer from "../PDFViewer";
-
-interface PDFDocument {
-  id: string;
-  name: string;
-  description: string;
-  file: string;
-  createdAt: Date;
-}
+import { PDFDocument } from "@/lib/database/models";
 
 interface DocumentsStepProps {
   documents: PDFDocument[];

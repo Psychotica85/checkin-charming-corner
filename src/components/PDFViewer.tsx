@@ -1,15 +1,7 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-interface PDFDocument {
-  id: string;
-  name: string;
-  description: string;
-  file: string;
-  createdAt: Date;
-}
+import { PDFDocument } from "@/lib/database/models";
 
 interface PDFViewerProps {
   document: PDFDocument;

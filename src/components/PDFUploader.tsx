@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -7,15 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { saveDocument, deleteDocument, getDocuments } from "@/lib/api";
 import { toast } from "sonner";
-
-interface PDFDocument {
-  id?: string;
-  _id?: string;
-  name: string;
-  description: string;
-  file: string;
-  createdAt: Date;
-}
+import { PDFDocument } from "@/lib/database/models";
 
 const PDFUploader = () => {
   const [documents, setDocuments] = useState<PDFDocument[]>([]);
@@ -73,12 +64,12 @@ const PDFUploader = () => {
       const base64 = await fileToBase64(selectedFile);
       
       // Create document
-      const newDocument = {
+      const newDocument: PDFDocument = {
         id: Date.now().toString(), // This will be replaced by MongoDB's _id
         name: formData.name,
         description: formData.description,
         file: base64,
-        createdAt: new Date(),
+        createdAt: new Date().toISOString(), // Store as string for consistency
       };
       
       // Save to MongoDB via API

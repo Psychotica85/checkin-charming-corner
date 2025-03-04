@@ -24,7 +24,7 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
       lastName: data.lastName || '',
       company: data.company,
       visitReason: data.visitReason || '',
-      visitDate: data.visitDate || new Date(),
+      visitDate: data.visitDate instanceof Date ? data.visitDate : new Date(data.visitDate || ''),
       visitTime: data.visitTime || '',
       acceptedDocuments: data.acceptedDocuments || [],
       timestamp: new Date(berlinTimestamp)
@@ -52,7 +52,7 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
           data.fullName,
           data.company,
           data.visitReason || '',
-          data.visitDate ? data.visitDate.toISOString() : null,
+          data.visitDate instanceof Date ? data.visitDate.toISOString() : String(data.visitDate),
           data.visitTime || '',
           data.acceptedRules ? 1 : 0,
           acceptedDocsJson,

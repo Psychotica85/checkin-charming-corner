@@ -15,10 +15,10 @@ export interface Document {
   name: string;
   description: string;
   file: string;
-  createdAt: string;
+  createdAt: string | Date;
 }
 
-// PDFDocument ist identisch mit Document
+// Make PDFDocument explicitly compatible with Document by using the same interface
 export type PDFDocument = Document;
 
 export type CheckInData = {

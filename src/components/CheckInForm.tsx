@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { submitCheckIn } from "@/lib/api";
 import { getDocuments } from "@/lib/services/documentService";
+import { PDFDocument } from "@/lib/database/models";
 
 // Import our components
 import StepIndicator from "./check-in/StepIndicator";
@@ -12,14 +12,6 @@ import ConfirmationStep from "./check-in/ConfirmationStep";
 import FormNavigation from "./check-in/FormNavigation";
 import SuccessView from "./check-in/SuccessView";
 import { formSteps, generateTimeOptions } from "./check-in/utils";
-
-interface PDFDocument {
-  id: string;
-  name: string;
-  description: string;
-  file: string;
-  createdAt: Date;
-}
 
 const timeOptions = generateTimeOptions();
 
