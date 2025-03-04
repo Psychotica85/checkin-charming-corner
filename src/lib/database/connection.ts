@@ -11,13 +11,13 @@ let db: Database.Database | null = null;
 /**
  * Verbindet zur SQLite-Datenbank
  */
-export const connectToDatabase = (): Database.Database => {
+export const connectToDatabase = (): Database.Database | null => {
   // Browser-Erkennung
   const isBrowser = typeof window !== 'undefined';
   
   if (isBrowser) {
     console.log('Browser-Umgebung erkannt, SQLite nicht verfügbar - verwende localStorage');
-    return null as any;
+    return null;
   }
   
   if (!db) {
@@ -135,6 +135,9 @@ export const withDatabase = async <T>(
   
   try {
     const db = connectToDatabase();
+    if (!db) {
+      return fallback();
+    }
     return operation(db);
   } catch (error) {
     console.error('Datenbankoperationsfehler:', error);
