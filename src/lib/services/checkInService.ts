@@ -1,6 +1,6 @@
 
 import { formatInTimeZone } from 'date-fns-tz';
-import { CheckInData, ICheckIn } from '../database/models';
+import { CheckIn, CheckInData } from '../database/models';
 import { withDatabase } from '../database/connection';
 import { generateCheckInReport } from '../pdfGenerator';
 import { getDocuments } from './documentService';
@@ -101,7 +101,7 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
   }
 };
 
-export const getCheckIns = async (): Promise<ICheckIn[]> => {
+export const getCheckIns = async (): Promise<CheckIn[]> => {
   return withDatabase(
     // SQLite-Datenbankoperation
     (db) => {

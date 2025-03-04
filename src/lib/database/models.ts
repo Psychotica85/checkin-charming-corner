@@ -35,6 +35,20 @@ export interface CheckIn {
   reportUrl?: string; // URL to generated PDF report
 }
 
+// Definition für CheckInData (Eingabedaten für das Formular)
+export interface CheckInData {
+  firstName?: string;
+  lastName?: string;
+  fullName: string;
+  company: string;
+  visitReason?: string;
+  visitDate?: Date | string;
+  visitTime?: string;
+  acceptedRules: boolean;
+  acceptedDocuments?: string[];
+  timestamp: Date | string;
+}
+
 // Hilfstypen für Backend-Operationen
 export interface ApiResponse {
   success: boolean;
