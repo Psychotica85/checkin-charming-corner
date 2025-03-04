@@ -1,89 +1,72 @@
 
-// SQLite-Datenbankverbindung
-// Wir verwenden einen Browser-Fallback, da SQLite nur im Node.js-Umfeld funktioniert
+import { Database } from 'better-sqlite3';
 
-// Browser-Erkennung
-const isBrowser = typeof window !== 'undefined';
+export type DatabaseCallback<T> = (db: Database) => T;
+export type BrowserCallback<T> = () => T;
 
-// SQLite Modul (nur im Node.js-Umfeld)
-let db: any = null;
-
-/**
- * Initialisiert die SQLite-Datenbank
- */
-const initializeDatabase = () => {
-  if (isBrowser) return null;
-  
-  try {
-    // Nur im Node.js-Umfeld ausführen
-    const Database = require('better-sqlite3');
-    const db = new Database('checkin.db');
-    
-    // Tabellen erstellen, falls sie nicht existieren
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS documents (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT,
-        file TEXT NOT NULL,
-        createdAt TEXT NOT NULL
-      );
+// Wrapper-Funktion, die entweder die Server- oder Browser-Version verwendet
+export const withDatabase = <T>(
+  serverFunction: DatabaseCallback<T>,
+  browserFunction: BrowserCallback<T>
+): T => {
+  // Überprüfen, ob wir uns im Browser befinden
+  if (typeof window !== 'undefined' && window.IS_BROWSER) {
+    console.log("Running in browser environment");
+    // Wir sind im Browser, verwende die Browser-Version
+    return browserFunction();
+  } else {
+    try {
+      console.log("Running in server environment");
+      // Wir sind auf dem Server, verwende SQLite
+      const better_sqlite3 = require('better-sqlite3');
+      const db = new better_sqlite3('data/database.sqlite', { verbose: console.log });
       
-      CREATE TABLE IF NOT EXISTS checkins (
-        id TEXT PRIMARY KEY,
-        firstName TEXT,
-        lastName TEXT,
-        fullName TEXT NOT NULL,
-        company TEXT NOT NULL,
-        visitReason TEXT,
-        visitDate TEXT,
-        visitTime TEXT,
-        acceptedRules INTEGER NOT NULL,
-        acceptedDocuments TEXT,
-        timestamp TEXT NOT NULL,
-        timezone TEXT,
-        pdfData TEXT
-      );
-    `);
-    
-    return db;
-  } catch (error) {
-    console.error('Fehler bei der Initialisierung der SQLite-Datenbank:', error);
-    return null;
-  }
-};
-
-/**
- * Hilfsfunktion zur Sicherstellung der Datenbankverbindung
- * Im Browser verwenden wir localStorage als Fallback
- */
-export const withDatabase = async <T>(
-  operation: (db: any) => T, 
-  fallback: () => T
-): Promise<T> => {
-  // Im Browser immer Fallback verwenden
-  if (isBrowser) {
-    console.log('Browser-Umgebung erkannt, verwende localStorage-Fallback');
-    return fallback();
-  }
-  
-  try {
-    // Datenbank initialisieren, falls noch nicht geschehen
-    if (!db) {
-      db = initializeDatabase();
+      // Schema erstellen (wenn es noch nicht existiert)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS checkins (
+          id TEXT PRIMARY KEY,
+          firstName TEXT NOT NULL,
+          lastName TEXT NOT NULL,
+          email TEXT NOT NULL,
+          company TEXT,
+          host TEXT NOT NULL,
+          visitDate TEXT NOT NULL,
+          visitTime TEXT NOT NULL,
+          expectedDuration TEXT,
+          purpose TEXT,
+          acceptedDocuments TEXT,
+          createdAt TEXT NOT NULL
+        );
+        
+        CREATE TABLE IF NOT EXISTS documents (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          fileData TEXT NOT NULL,
+          uploadedAt TEXT NOT NULL
+        );
+        
+        CREATE TABLE IF NOT EXISTS company_settings (
+          id INTEGER PRIMARY KEY,
+          companyName TEXT,
+          companyLogo TEXT,
+          address TEXT,
+          contactEmail TEXT,
+          contactPhone TEXT,
+          updatedAt TEXT
+        );
+      `);
+      
+      // Führe die Funktion mit der Datenbankverbindung aus
+      try {
+        return serverFunction(db);
+      } finally {
+        // Schließe die Datenbankverbindung
+        db.close();
+      }
+    } catch (error) {
+      console.error('Fehler bei der Datenbankoperationen:', error);
+      // Fallback zum Browser-Verhalten im Falle eines Fehlers
+      return browserFunction();
     }
-    
-    // Wenn die Datenbankinitialisierung fehlgeschlagen ist, Fallback verwenden
-    if (!db) {
-      console.log('SQLite-Datenbankinitialisierung fehlgeschlagen, verwende Fallback');
-      return fallback();
-    }
-    
-    // Diese Funktion wird im Node.js-Umfeld ausgeführt
-    console.log('Server-Umgebung erkannt, verwende SQLite');
-    return operation(db);
-  } catch (error) {
-    console.error('Datenbankoperationsfehler:', error);
-    return fallback();
   }
 };

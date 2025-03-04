@@ -13,6 +13,10 @@ import CompanySettingsForm from "@/components/CompanySettingsForm";
 import CheckInTable from "@/components/CheckInTable";
 
 const Admin = () => {
+  useEffect(() => {
+    console.log("Admin page mounted"); // Debug log
+  }, []);
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -24,11 +28,13 @@ const Admin = () => {
     if (storedAuth === "true") {
       setIsAuthenticated(true);
     }
+    console.log("Admin auth state:", isAuthenticated); // Debug log
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log("Login attempt with:", username); // Debug log
       const result = await authenticateUser(username, password);
       if (result.success) {
         setIsAuthenticated(true);
@@ -59,7 +65,11 @@ const Admin = () => {
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 Abmelden
               </Button>
-            ) : null}
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => navigate("/")}>
+                Zurück zur Startseite
+              </Button>
+            )}
           </div>
         </div>
       </header>

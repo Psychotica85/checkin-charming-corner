@@ -1,10 +1,15 @@
 
+import { useEffect } from "react";
 import CheckInForm from "@/components/CheckInForm";
 import Logo from "@/components/Logo";
 import { Toaster } from "sonner";
 import { Link } from "react-router-dom";
 
 const Index = () => {
+  useEffect(() => {
+    console.log("Index page mounted"); // Debug log
+  }, []);
+
   return (
     <div className="min-h-screen w-full flex flex-col bg-background">
       <Toaster position="top-center" />

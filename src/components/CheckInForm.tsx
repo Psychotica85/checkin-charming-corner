@@ -1,4 +1,5 @@
 
+import React from "react";
 import { useCheckInForm } from "@/hooks/useCheckInForm";
 import { formSteps, generateTimeOptions } from "./check-in/utils";
 
@@ -13,6 +14,8 @@ import SuccessView from "./check-in/SuccessView";
 const timeOptions = generateTimeOptions();
 
 const CheckInForm = () => {
+  console.log("CheckInForm rendering"); // Debug log
+  
   const {
     currentStep,
     formData,
