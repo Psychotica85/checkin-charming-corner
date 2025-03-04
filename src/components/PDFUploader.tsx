@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { saveDocument, deleteDocument, getDocuments } from "@/lib/api";
 import { toast } from "sonner";
 import { PDFDocument } from "@/lib/database/models";
+import { isBrowser } from "@/lib/database/connection";
 
 const PDFUploader = () => {
   const [documents, setDocuments] = useState<PDFDocument[]>([]);
@@ -24,7 +25,8 @@ const PDFUploader = () => {
     const loadDocuments = async () => {
       try {
         const docs = await getDocuments();
-        setDocuments(docs);
+        console.log("Geladene Dokumente:", docs);
+        setDocuments(docs || []);
       } catch (error) {
         console.error("Error loading documents:", error);
         toast.error("Fehler beim Laden der Dokumente");
@@ -73,22 +75,33 @@ const PDFUploader = () => {
         createdAt: new Date().toISOString(), // Store as string for consistency
       };
       
-      // Save to MongoDB via API
-      const success = await saveDocument(newDocument);
+      // Save document
+      const result = await saveDocument(newDocument);
       
-      if (success) {
+      if (result.success) {
         // Refresh documents list
         const updatedDocs = await getDocuments();
-        setDocuments(updatedDocs);
+        setDocuments(updatedDocs || []);
         
         // Reset form
         setFormData({ name: "", description: "" });
         setSelectedFile(null);
         
+        // Clear file input
+        const fileInput = document.getElementById('pdf') as HTMLInputElement;
+        if (fileInput) {
+          fileInput.value = '';
+        }
+        
         // Show success toast
         toast.success("Dokument erfolgreich hochgeladen");
+        
+        // Im Browser-Kontext fügen wir eine zusätzliche Nachricht hinzu
+        if (isBrowser) {
+          toast.info("Hinweis: Im Browser-Modus werden Dokumente im SessionStorage gespeichert");
+        }
       } else {
-        toast.error("Fehler beim Speichern des Dokuments");
+        toast.error(result.message || "Fehler beim Speichern des Dokuments");
       }
     } catch (error) {
       console.error("Error uploading document:", error);
@@ -106,13 +119,17 @@ const PDFUploader = () => {
     setIsDeleting(true);
     
     try {
-      await deleteDocument(id);
+      const result = await deleteDocument(id);
       
-      // Refresh documents list
-      const updatedDocs = await getDocuments();
-      setDocuments(updatedDocs);
-      
-      toast.success("Dokument erfolgreich gelöscht");
+      if (result.success) {
+        // Refresh documents list
+        const updatedDocs = await getDocuments();
+        setDocuments(updatedDocs || []);
+        
+        toast.success("Dokument erfolgreich gelöscht");
+      } else {
+        toast.error(result.message || "Fehler beim Löschen des Dokuments");
+      }
     } catch (error) {
       console.error("Error deleting document:", error);
       toast.error("Fehler beim Löschen des Dokuments");

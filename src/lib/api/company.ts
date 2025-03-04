@@ -1,5 +1,5 @@
 
-import { useLocalStorage } from "@/lib/database/connection";
+import { useLocalStorage, isBrowser } from "@/lib/database/connection";
 import {
   getCompanySettings as companyServiceGetCompanySettings,
   updateCompanySettings as companyServiceUpdateCompanySettings,
@@ -12,10 +12,22 @@ import { DEFAULT_COMPANY_SETTINGS } from "@/lib/api/config";
 export const getCompanySettings = async () => {
   console.log("getCompanySettings aufgerufen");
   try {
-    // Da wir im Browser-Kontext sind, sollten wir eigentlich einen API-Endpunkt aufrufen
-    // Für diese Demo verwenden wir die Standardeinstellungen
-    console.log("Verwende Standard-Unternehmenseinstellungen im Browser");
-    return DEFAULT_COMPANY_SETTINGS;
+    // Im Browser-Kontext verwenden wir sessionStorage für die Demo
+    if (isBrowser) {
+      console.log("Browser-Kontext erkannt, lade Unternehmenseinstellungen aus sessionStorage");
+      
+      const storedSettings = sessionStorage.getItem('companySettings');
+      if (storedSettings) {
+        return JSON.parse(storedSettings);
+      }
+      
+      // Standardeinstellungen verwenden, wenn keine gespeichert sind
+      sessionStorage.setItem('companySettings', JSON.stringify(DEFAULT_COMPANY_SETTINGS));
+      return DEFAULT_COMPANY_SETTINGS;
+    }
+    
+    // Im Server-Kontext den richtigen Service aufrufen
+    return await companyServiceGetCompanySettings();
   } catch (error) {
     console.error("API error - getCompanySettings:", error);
     console.log("Fehler beim Laden der Unternehmenseinstellungen, verwende Standardwerte");
@@ -25,21 +37,29 @@ export const getCompanySettings = async () => {
 
 /**
  * Aktualisiert die Unternehmenseinstellungen
- * Im Browser-Kontext simulieren wir dies für die Demonstration
  */
 export const updateCompanySettings = async (settingsData: any) => {
   try {
     console.log("updateCompanySettings aufgerufen mit:", settingsData);
     
-    // Im Browser können wir die tatsächliche Speicherung simulieren
-    // In einer vollständigen Implementierung würden wir einen API-Endpunkt aufrufen
-    console.log("Simuliere Speicherung der Unternehmenseinstellungen im Browser");
+    // Im Browser-Kontext verwenden wir sessionStorage für die Demo
+    if (isBrowser) {
+      console.log("Browser-Kontext erkannt, speichere Unternehmenseinstellungen in sessionStorage");
+      
+      // Einstellungen im sessionStorage speichern
+      sessionStorage.setItem('companySettings', JSON.stringify({
+        ...settingsData,
+        updatedAt: new Date().toISOString()
+      }));
+      
+      return {
+        success: true,
+        message: "Unternehmenseinstellungen wurden erfolgreich gespeichert"
+      };
+    }
     
-    // Für die Demo stellen wir einen erfolgreichen API-Aufruf dar
-    return {
-      success: true,
-      message: "Unternehmenseinstellungen wurden erfolgreich gespeichert (simuliert im Browser)"
-    };
+    // Im Server-Kontext den richtigen Service aufrufen
+    return await companyServiceUpdateCompanySettings(settingsData);
   } catch (error) {
     console.error("API error - updateCompanySettings:", error);
     return { success: false, message: "Failed to update company settings" };

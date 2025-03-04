@@ -1,5 +1,5 @@
 
-import { useLocalStorage } from "@/lib/database/connection";
+import { useLocalStorage, isBrowser } from "@/lib/database/connection";
 import {
   saveDocument as documentServiceSaveDocument,
   getDocuments as documentServiceGetDocuments,
@@ -8,24 +8,37 @@ import {
 
 /**
  * Speichert ein Dokument
- * Im Browser-Kontext simulieren wir dies für die Demonstration
  */
 export const saveDocument = async (pdfData: any) => {
   try {
-    console.log("saveDocument aufgerufen im Browser-Kontext");
+    console.log("saveDocument aufgerufen");
     
-    // Für die Demo stellen wir einen erfolgreichen API-Aufruf dar
-    return {
-      success: true,
-      message: "Dokument wurde erfolgreich gespeichert (simuliert im Browser)",
-      document: {
+    // Wenn wir im Browser sind, verwenden wir den Dokumentendienst
+    if (isBrowser) {
+      console.log("Browser-Kontext erkannt, simuliere Dokumentenspeicherung");
+      
+      // Für Demo-Zwecke speichern wir temporär im sessionStorage
+      const documents = JSON.parse(sessionStorage.getItem('documents') || '[]');
+      const newDocument = {
         id: Date.now().toString(),
         name: pdfData.name || "Dokument",
         description: pdfData.description || "",
         file: pdfData.file || null,
         createdAt: new Date().toISOString()
-      }
-    };
+      };
+      
+      documents.push(newDocument);
+      sessionStorage.setItem('documents', JSON.stringify(documents));
+      
+      return {
+        success: true,
+        message: "Dokument wurde erfolgreich gespeichert",
+        document: newDocument
+      };
+    }
+    
+    // Im Server-Kontext den richtigen Service aufrufen
+    return await documentServiceSaveDocument(pdfData);
   } catch (error) {
     console.error("API error - saveDocument:", error);
     return { success: false, message: "Failed to save PDF document" };
@@ -34,14 +47,21 @@ export const saveDocument = async (pdfData: any) => {
 
 /**
  * Lädt alle Dokumente
- * Im Browser-Kontext simulieren wir dies für die Demonstration 
  */
 export const getDocuments = async () => {
   try {
-    console.log("getDocuments aufgerufen im Browser-Kontext");
+    console.log("getDocuments aufgerufen");
     
-    // Für die Demo geben wir eine leere Liste zurück
-    return [];
+    // Wenn wir im Browser sind, verwenden wir sessionStorage für die Demo
+    if (isBrowser) {
+      console.log("Browser-Kontext erkannt, lade Dokumente aus sessionStorage");
+      
+      const documents = JSON.parse(sessionStorage.getItem('documents') || '[]');
+      return documents;
+    }
+    
+    // Im Server-Kontext den richtigen Service aufrufen
+    return await documentServiceGetDocuments();
   } catch (error) {
     console.error("API error - getDocuments:", error);
     return [];
@@ -50,17 +70,27 @@ export const getDocuments = async () => {
 
 /**
  * Löscht ein Dokument
- * Im Browser-Kontext simulieren wir dies für die Demonstration
  */
 export const deleteDocument = async (id: string) => {
   try {
-    console.log("deleteDocument aufgerufen im Browser-Kontext mit ID:", id);
+    console.log("deleteDocument aufgerufen mit ID:", id);
     
-    // Für die Demo stellen wir einen erfolgreichen API-Aufruf dar
-    return { 
-      success: true, 
-      message: "Dokument wurde erfolgreich gelöscht (simuliert im Browser)" 
-    };
+    // Wenn wir im Browser sind, verwenden wir sessionStorage für die Demo
+    if (isBrowser) {
+      console.log("Browser-Kontext erkannt, lösche Dokument aus sessionStorage");
+      
+      const documents = JSON.parse(sessionStorage.getItem('documents') || '[]');
+      const filteredDocuments = documents.filter((doc: any) => doc.id !== id);
+      sessionStorage.setItem('documents', JSON.stringify(filteredDocuments));
+      
+      return { 
+        success: true, 
+        message: "Dokument wurde erfolgreich gelöscht" 
+      };
+    }
+    
+    // Im Server-Kontext den richtigen Service aufrufen
+    return await documentServiceDeleteDocument(id);
   } catch (error) {
     console.error("API error - deleteDocument:", error);
     return { success: false, message: "Failed to delete PDF document" };

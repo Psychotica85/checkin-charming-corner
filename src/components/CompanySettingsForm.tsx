@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { getCompanySettings, updateCompanySettings } from "@/lib/api";
 import { CompanySettings } from "@/lib/database/models";
-import { isBrowser } from "@/lib/api/config";
+import { isBrowser } from "@/lib/database/connection";
 
 const MAX_LOGO_SIZE = 2 * 1024 * 1024; // 2MB in bytes
 
@@ -124,7 +124,7 @@ const CompanySettingsForm = () => {
         
         // Im Browser-Kontext fügen wir eine zusätzliche Nachricht hinzu
         if (isBrowser) {
-          toast.info("Hinweis: Im Browser-Modus werden Änderungen nur simuliert");
+          toast.info("Hinweis: Im Browser-Modus werden Änderungen im SessionStorage gespeichert");
         }
         
         await loadSettings(); // Reload settings to get the latest data
