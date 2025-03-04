@@ -1,22 +1,57 @@
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PDFDocument } from "@/lib/database/models";
+import { toast } from "sonner";
 
 interface PDFViewerProps {
   document?: PDFDocument;
   url?: string;
   onAccept?: (documentId: string) => void;
   isAccepted?: boolean;
+  requireReading?: boolean;
 }
 
-const PDFViewer = ({ document, url, onAccept, isAccepted }: PDFViewerProps) => {
+const PDFViewer = ({ document, url, onAccept, isAccepted, requireReading = false }: PDFViewerProps) => {
   const [showPDF, setShowPDF] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasBeenRead, setHasBeenRead] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const scrollTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Funktion zum Überprüfen der Scroll-Position im PDF
+  const checkIfRead = () => {
+    if (showPDF && iframeRef.current && requireReading) {
+      // Wir betrachten das Dokument als gelesen, wenn es angezeigt wird
+      // In einer realen Anwendung könnte hier eine ausgeklügeltere Logik angewendet werden
+      setHasBeenRead(true);
+    }
+  };
+
+  // Dokument als gelesen markieren, wenn es angezeigt wird
+  useEffect(() => {
+    if (showPDF && requireReading) {
+      // Setze einen Timer, um dem Benutzer Zeit zum Lesen zu geben (z.B. 2 Sekunden)
+      scrollTimer.current = setTimeout(() => {
+        setHasBeenRead(true);
+      }, 2000);
+    }
+
+    return () => {
+      if (scrollTimer.current) {
+        clearTimeout(scrollTimer.current);
+      }
+    };
+  }, [showPDF, requireReading]);
 
   const handleAccept = () => {
+    if (requireReading && !hasBeenRead) {
+      toast.error("Bitte öffnen und lesen Sie das Dokument zuerst, bevor Sie es akzeptieren.");
+      return;
+    }
+
     if (onAccept && document) {
       onAccept(document.id);
     }
@@ -65,6 +100,7 @@ const PDFViewer = ({ document, url, onAccept, isAccepted }: PDFViewerProps) => {
   // Handle iframe load events
   const handleIframeLoad = () => {
     setIsLoading(false);
+    checkIfRead();
   };
 
   const handleIframeError = () => {
@@ -117,6 +153,7 @@ const PDFViewer = ({ document, url, onAccept, isAccepted }: PDFViewerProps) => {
           )}
           
           <iframe 
+            ref={iframeRef}
             src={pdfUrl} 
             className="w-full h-[90vh]" 
             title={document?.name || "PDF Dokument"}
@@ -134,25 +171,45 @@ const PDFViewer = ({ document, url, onAccept, isAccepted }: PDFViewerProps) => {
               className={cn(
                 "h-6 w-6 rounded-full flex items-center justify-center mr-2",
                 isAccepted
-                  ? "bg-green-500/10 text-green-500"
+                  ? "bg-green-500/10 text-green-500" 
+                  : requireReading && !hasBeenRead && !showPDF
+                  ? "bg-amber-500/10 text-amber-500"
                   : "bg-muted text-muted-foreground"
               )}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 6L9 17l-5-5" />
-              </svg>
+              {isAccepted ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              ) : requireReading && !hasBeenRead && !showPDF ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 9v4m0 4h.01M22 12A10 10 0 1 1 2 12a10 10 0 0 1 20 0Z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              )}
             </div>
             <span className="text-sm">
-              {isAccepted ? "Dokument akzeptiert" : "Dokument noch nicht akzeptiert"}
+              {isAccepted 
+                ? "Dokument akzeptiert" 
+                : requireReading && !hasBeenRead 
+                ? "Bitte Dokument öffnen und lesen" 
+                : "Dokument noch nicht akzeptiert"}
             </span>
           </div>
           <Button
             onClick={handleAccept}
             variant="outline"
             size="sm"
-            disabled={isAccepted}
+            disabled={isAccepted || (requireReading && !hasBeenRead)}
           >
-            {isAccepted ? "Akzeptiert" : "Akzeptieren"}
+            {isAccepted 
+              ? "Akzeptiert" 
+              : requireReading && !hasBeenRead 
+              ? "Lesen erforderlich" 
+              : "Akzeptieren"}
           </Button>
         </div>
       )}

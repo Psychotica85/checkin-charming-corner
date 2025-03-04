@@ -1,13 +1,32 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import CheckInForm from "@/components/CheckInForm";
 import Logo from "@/components/Logo";
 import { Toaster } from "sonner";
 import { Link } from "react-router-dom";
+import { getCompanySettings } from "@/lib/api";
 
 const Index = () => {
+  const [companyName, setCompanyName] = useState<string>("");
+
   useEffect(() => {
     console.log("Index page mounted"); // Debug log
+    
+    // Lade die Unternehmensdaten für den Footer
+    const loadCompanyData = async () => {
+      try {
+        const settings = await getCompanySettings();
+        if (settings && settings.address) {
+          // Extrahiere die erste Zeile der Adresse als Unternehmensnamen
+          const firstLine = settings.address.split('\n')[0].trim();
+          setCompanyName(firstLine);
+        }
+      } catch (error) {
+        console.error("Failed to load company data:", error);
+      }
+    };
+    
+    loadCompanyData();
   }, []);
 
   return (
@@ -47,7 +66,7 @@ const Index = () => {
                 Willkommen
               </div>
               <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
-                Digitaler Gäste Check-In
+                Digitaler Besucher Check-In
               </h1>
               <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
                 Wir freuen uns, Sie in unserem Unternehmen begrüßen zu dürfen. Bitte füllen Sie das Formular aus, um Ihren Besuch zu registrieren.
@@ -79,7 +98,7 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="w-full py-4 px-6 text-center text-sm text-muted-foreground bg-background">
-        <p>&copy; {new Date().getFullYear()} Ihr Unternehmen. Alle Rechte vorbehalten.</p>
+        <p>&copy; {new Date().getFullYear()} {companyName || "Ihr Unternehmen"}. Alle Rechte vorbehalten.</p>
       </footer>
     </div>
   );

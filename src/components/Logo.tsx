@@ -31,10 +31,10 @@ const Logo = ({ className }: LogoProps) => {
         <img 
           src={companyLogo} 
           alt="Company Logo" 
-          className="w-10 h-10 object-contain"
+          className="w-20 h-20 object-contain" // Doppelte Höhe: von h-10 auf h-20
         />
       ) : (
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center text-white font-bold text-lg shadow-lg">
+        <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center text-white font-bold text-lg shadow-lg">
           CI
         </div>
       )}

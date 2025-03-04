@@ -1,3 +1,4 @@
+
 import { cn } from "@/lib/utils";
 import PDFViewer from "../PDFViewer";
 import { PDFDocument } from "@/lib/database/models";
@@ -27,6 +28,7 @@ const DocumentsStep = ({ documents, acceptedDocuments, onAcceptDocument }: Docum
               document={doc}
               onAccept={onAcceptDocument}
               isAccepted={acceptedDocuments.includes(doc.id)}
+              requireReading={true}
             />
           ))}
         </div>
