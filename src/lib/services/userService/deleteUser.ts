@@ -1,21 +1,19 @@
 
-import { prisma } from '../../database/prisma';
 import { withDatabase } from './utils';
+import { getUserModel } from '../../database/mongoModels';
 import { getUsers } from './getUsers';
 
 export const deleteUser = async (id: string): Promise<{ success: boolean, message: string }> => {
   return withDatabase(
     // Database operation
     async () => {
+      const UserModel = getUserModel();
+      
       // Get all admin users
-      const adminUsers = await prisma.user.findMany({
-        where: { role: 'ADMIN' }
-      });
+      const adminUsers = await UserModel.find({ role: 'ADMIN' }).lean().exec();
       
       // Get the user to delete
-      const userToDelete = await prisma.user.findUnique({
-        where: { id }
-      });
+      const userToDelete = await UserModel.findById(id).lean().exec();
       
       if (!userToDelete) {
         return { success: false, message: 'Benutzer nicht gefunden' };
@@ -27,9 +25,7 @@ export const deleteUser = async (id: string): Promise<{ success: boolean, messag
       }
       
       // Delete the user
-      await prisma.user.delete({
-        where: { id }
-      });
+      await UserModel.findByIdAndDelete(id);
       
       return { success: true, message: 'Benutzer erfolgreich gelöscht' };
     },

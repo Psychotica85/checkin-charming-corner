@@ -1,20 +1,20 @@
 
 import { User } from '../../database/models';
-import { prisma } from '../../database/prisma';
-import { mapPrismaRoleToFrontendRole, withDatabase } from './utils';
+import { mapMongoRoleToFrontendRole, withDatabase } from './utils';
+import { getUserModel } from '../../database/mongoModels';
 import { getUsers } from './getUsers';
 
 export const authenticateUser = async (username: string, password: string): Promise<{ success: boolean, message: string, user?: Omit<User, 'password'> }> => {
   return withDatabase(
     // Database operation
     async () => {
+      const UserModel = getUserModel();
+      
       // Find user by username and password
-      const user = await prisma.user.findFirst({
-        where: { 
-          username,
-          password 
-        }
-      });
+      const user = await UserModel.findOne({ 
+        username,
+        password 
+      }).lean().exec();
       
       if (!user) {
         return { success: false, message: 'Ungültiger Benutzername oder Passwort' };
@@ -25,9 +25,9 @@ export const authenticateUser = async (username: string, password: string): Prom
         success: true, 
         message: 'Anmeldung erfolgreich', 
         user: {
-          id: user.id,
+          id: user._id.toString(),
           username: user.username,
-          role: mapPrismaRoleToFrontendRole(user.role),
+          role: mapMongoRoleToFrontendRole(user.role),
           createdAt: user.createdAt.toISOString()
         }
       };

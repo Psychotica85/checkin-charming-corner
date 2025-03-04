@@ -48,13 +48,13 @@ export interface ICheckInDocument extends Document {
 }
 
 const CheckInSchema = new Schema<ICheckInDocument>({
-  firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
+  firstName: { type: String },
+  lastName: { type: String },
   fullName: { type: String, required: true },
   company: { type: String, required: true },
-  visitReason: { type: String, required: true },
-  visitDate: { type: Date, required: true },
-  visitTime: { type: String, required: true },
+  visitReason: { type: String },
+  visitDate: { type: Date },
+  visitTime: { type: String },
   acceptedRules: { type: Boolean, default: false },
   acceptedDocuments: [{ type: String }],
   timestamp: { type: Date, default: Date.now },
@@ -62,7 +62,7 @@ const CheckInSchema = new Schema<ICheckInDocument>({
   pdfData: { type: Buffer }
 });
 
-// Modelle exportieren - Lazy-Load für bessere Browser-Kompatibilität
+// Modelle exportieren
 export const getUserModel = () => {
   return mongoose.models.User || mongoose.model<IUserDocument>('User', UserSchema);
 };

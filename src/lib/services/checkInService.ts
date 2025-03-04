@@ -4,7 +4,6 @@ import { CheckInData, ICheckIn } from '../database/models';
 import { connectToDatabase } from '../database/connection';
 import { generateCheckInReport } from '../pdfGenerator';
 import { getDocuments } from './documentService';
-import { prisma } from '../database/prisma';
 import { getCheckInModel } from '../database/mongoModels';
 
 // Browser-Erkennung
@@ -38,11 +37,10 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
     const arrayBuffer = await pdfBlob.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     
-    // Im Browser simulieren wir nur die Speicherung
+    // Im Browser simulieren wir nur die Speicherung in localStorage
     if (isBrowser) {
-      console.log('Browser-Umgebung: Check-in würde in der Datenbank gespeichert werden.');
+      console.log('Browser-Umgebung: Check-in wird im localStorage gespeichert.');
       
-      // Lokalen Speicher für Demo-Zwecke verwenden
       const checkIns = JSON.parse(localStorage.getItem('checkIns') || '[]');
       const newCheckIn = {
         id: Date.now().toString(),
@@ -63,46 +61,23 @@ export const submitCheckIn = async (data: CheckInData): Promise<{ success: boole
       };
     }
     
-    // Bei Server-Umgebung in MongoDB und Prisma speichern
-    try {
-      // Zuerst Prisma versuchen
-      await prisma.checkIn.create({
-        data: {
-          firstName: data.firstName,
-          lastName: data.lastName,
-          fullName: data.fullName,
-          company: data.company,
-          visitReason: data.visitReason,
-          visitDate: data.visitDate,
-          visitTime: data.visitTime,
-          acceptedRules: data.acceptedRules,
-          acceptedDocuments: data.acceptedDocuments || [],
-          timestamp: new Date(berlinTimestamp),
-          timezone: 'Europe/Berlin',
-          pdfData: buffer
-        }
-      });
-    } catch (prismaError) {
-      console.warn('Prisma-Speicherung fehlgeschlagen, verwende MongoDB:', prismaError);
+    // In MongoDB speichern
+    const CheckInModel = getCheckInModel();
       
-      // Fallback: In MongoDB speichern
-      const CheckInModel = getCheckInModel();
-      
-      await new CheckInModel({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        fullName: data.fullName,
-        company: data.company,
-        visitReason: data.visitReason,
-        visitDate: data.visitDate,
-        visitTime: data.visitTime,
-        acceptedRules: data.acceptedRules,
-        acceptedDocuments: data.acceptedDocuments || [],
-        timestamp: new Date(berlinTimestamp),
-        timezone: 'Europe/Berlin',
-        pdfData: buffer
-      }).save();
-    }
+    await new CheckInModel({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      fullName: data.fullName,
+      company: data.company,
+      visitReason: data.visitReason,
+      visitDate: data.visitDate,
+      visitTime: data.visitTime,
+      acceptedRules: data.acceptedRules,
+      acceptedDocuments: data.acceptedDocuments || [],
+      timestamp: new Date(berlinTimestamp),
+      timezone: 'Europe/Berlin',
+      pdfData: buffer
+    }).save();
     
     // URL für PDF-Vorschau im Browser erstellen
     const pdfUrl = URL.createObjectURL(pdfBlob);
@@ -133,54 +108,27 @@ export const getCheckIns = async (): Promise<any[]> => {
       return checkIns;
     }
     
-    // Bei Server-Umgebung aus MongoDB oder Prisma abrufen
-    try {
-      // Zuerst Prisma versuchen
-      const checkIns = await prisma.checkIn.findMany({
-        orderBy: {
-          timestamp: 'desc'
-        }
-      });
+    // Aus MongoDB abrufen
+    const CheckInModel = getCheckInModel();
+    const checkIns = await CheckInModel.find().sort({ timestamp: -1 }).lean().exec();
+    
+    // Zu Frontend-Format konvertieren
+    return checkIns.map(checkIn => {
+      const { pdfData, _id, ...rest } = checkIn;
       
-      // Objekt-URLs für PDF-Daten erstellen
-      return checkIns.map((checkIn) => {
-        const { pdfData, ...rest } = checkIn;
-        
-        // Wenn wir PDF-Daten haben, eine Blob-URL dafür erstellen
-        let reportUrl = null;
-        if (pdfData) {
-          const blob = new Blob([Buffer.from(pdfData)], { type: 'application/pdf' });
-          reportUrl = URL.createObjectURL(blob);
-        }
-        
-        return { ...rest, reportUrl };
-      });
-    } catch (prismaError) {
-      console.warn('Prisma-Abfrage fehlgeschlagen, verwende MongoDB:', prismaError);
+      // Wenn wir PDF-Daten haben, eine Blob-URL dafür erstellen
+      let reportUrl = null;
+      if (pdfData) {
+        const blob = new Blob([Buffer.from(pdfData)], { type: 'application/pdf' });
+        reportUrl = URL.createObjectURL(blob);
+      }
       
-      // Fallback: Aus MongoDB abrufen
-      const CheckInModel = getCheckInModel();
-      const checkIns = await CheckInModel.find().sort({ timestamp: -1 }).exec();
-      
-      // Zu Frontend-Format konvertieren
-      return checkIns.map(checkIn => {
-        const data = checkIn.toObject();
-        const { pdfData, _id, ...rest } = data;
-        
-        // Wenn wir PDF-Daten haben, eine Blob-URL dafür erstellen
-        let reportUrl = null;
-        if (pdfData) {
-          const blob = new Blob([Buffer.from(pdfData)], { type: 'application/pdf' });
-          reportUrl = URL.createObjectURL(blob);
-        }
-        
-        return { 
-          id: _id.toString(),
-          ...rest, 
-          reportUrl 
-        };
-      });
-    }
+      return { 
+        id: _id.toString(),
+        ...rest, 
+        reportUrl 
+      };
+    });
   } catch (error) {
     console.error('Error fetching check-ins:', error);
     return [];

@@ -1,21 +1,21 @@
 
 import { User } from '../../database/models';
-import { prisma } from '../../database/prisma';
-import { mapFrontendRoleToPrismaRole, withDatabase } from './utils';
+import { mapFrontendRoleToMongoRole, withDatabase } from './utils';
+import { getUserModel } from '../../database/mongoModels';
 import { getUsers } from './getUsers';
 
 export const updateUser = async (id: string, userData: Partial<Omit<User, 'id' | 'createdAt'>>): Promise<{ success: boolean, message: string }> => {
   return withDatabase(
     // Database operation
     async () => {
+      const UserModel = getUserModel();
+      
       // If changing username, check if it's already taken by another user
       if (userData.username) {
-        const existingUser = await prisma.user.findFirst({
-          where: { 
-            username: userData.username,
-            id: { not: id }
-          }
-        });
+        const existingUser = await UserModel.findOne({ 
+          username: userData.username,
+          _id: { $ne: id }
+        }).lean().exec();
         
         if (existingUser) {
           return { success: false, message: 'Benutzername bereits vergeben' };
@@ -25,16 +25,13 @@ export const updateUser = async (id: string, userData: Partial<Omit<User, 'id' |
       // Prepare update data
       const updateData: any = { ...userData };
       
-      // If role is being updated, map to Prisma role format
+      // If role is being updated, map to MongoDB role format
       if (userData.role) {
-        updateData.role = mapFrontendRoleToPrismaRole(userData.role);
+        updateData.role = mapFrontendRoleToMongoRole(userData.role);
       }
       
       // Update user
-      const updatedUser = await prisma.user.update({
-        where: { id },
-        data: updateData
-      });
+      const updatedUser = await UserModel.findByIdAndUpdate(id, updateData, { new: true }).lean().exec();
       
       if (!updatedUser) {
         return { success: false, message: 'Benutzer nicht gefunden' };

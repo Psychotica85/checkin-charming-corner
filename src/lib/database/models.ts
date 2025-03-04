@@ -1,6 +1,6 @@
 
 // Typdefinitionen für die Frontend-Interaktion
-// Hinweis: Diese sind unabhängig von den Prisma-Modellen
+// Diese Typen werden in der gesamten Anwendung verwendet
 
 export interface User {
   id: string;
@@ -18,8 +18,8 @@ export interface Document {
   createdAt: string;
 }
 
-export interface IDocument extends Document {
-  // Erweitert Document für bessere Kompatibilität mit DocumentService
+export interface PDFDocument extends Document {
+  createdAt: string;
 }
 
 export type CheckInData = {
