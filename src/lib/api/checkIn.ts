@@ -1,6 +1,6 @@
 
 import { CheckIn } from "@/lib/database/models";
-import { useLocalStorage, isBrowser } from "@/lib/database/connection";
+import { isBrowser } from "@/lib/api/config";
 import {
   getCheckIns as checkInServiceGetCheckIns,
   deleteCheckIn as checkInServiceDeleteCheckIn,

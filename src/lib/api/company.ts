@@ -1,5 +1,5 @@
 
-import { useLocalStorage, isBrowser } from "@/lib/database/connection";
+import { isBrowser } from "@/lib/api/config";
 import {
   getCompanySettings as companyServiceGetCompanySettings,
   updateCompanySettings as companyServiceUpdateCompanySettings,

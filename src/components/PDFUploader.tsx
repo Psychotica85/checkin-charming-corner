@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { saveDocument, deleteDocument, getDocuments } from "@/lib/api";
 import { toast } from "sonner";
 import { PDFDocument } from "@/lib/database/models";
-import { isBrowser } from "@/lib/database/connection";
+import { isBrowser } from "@/lib/api/config";
 
 const PDFUploader = () => {
   const [documents, setDocuments] = useState<PDFDocument[]>([]);
@@ -78,7 +78,7 @@ const PDFUploader = () => {
       // Save document
       const result = await saveDocument(newDocument);
       
-      if (result.success) {
+      if (result && 'success' in result && result.success) {
         // Refresh documents list
         const updatedDocs = await getDocuments();
         setDocuments(updatedDocs || []);
@@ -101,7 +101,8 @@ const PDFUploader = () => {
           toast.info("Hinweis: Im Browser-Modus werden Dokumente im SessionStorage gespeichert");
         }
       } else {
-        toast.error(result.message || "Fehler beim Speichern des Dokuments");
+        const errorMessage = result && 'message' in result ? result.message : "Fehler beim Speichern des Dokuments";
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error("Error uploading document:", error);
@@ -121,14 +122,15 @@ const PDFUploader = () => {
     try {
       const result = await deleteDocument(id);
       
-      if (result.success) {
+      if (result && 'success' in result && result.success) {
         // Refresh documents list
         const updatedDocs = await getDocuments();
         setDocuments(updatedDocs || []);
         
         toast.success("Dokument erfolgreich gelöscht");
       } else {
-        toast.error(result.message || "Fehler beim Löschen des Dokuments");
+        const errorMessage = result && 'message' in result ? result.message : "Fehler beim Löschen des Dokuments";
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error("Error deleting document:", error);

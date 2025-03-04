@@ -38,7 +38,11 @@ export const saveDocument = async (pdfData: any) => {
     }
     
     // Im Server-Kontext den richtigen Service aufrufen
-    return await documentServiceSaveDocument(pdfData);
+    const result = await documentServiceSaveDocument(pdfData);
+    return { 
+      success: result,
+      message: result ? "Dokument wurde erfolgreich gespeichert" : "Fehler beim Speichern des Dokuments"
+    };
   } catch (error) {
     console.error("API error - saveDocument:", error);
     return { success: false, message: "Failed to save PDF document" };
@@ -90,7 +94,11 @@ export const deleteDocument = async (id: string) => {
     }
     
     // Im Server-Kontext den richtigen Service aufrufen
-    return await documentServiceDeleteDocument(id);
+    const result = await documentServiceDeleteDocument(id);
+    return { 
+      success: result, 
+      message: result ? "Dokument wurde erfolgreich gelöscht" : "Fehler beim Löschen des Dokuments" 
+    };
   } catch (error) {
     console.error("API error - deleteDocument:", error);
     return { success: false, message: "Failed to delete PDF document" };

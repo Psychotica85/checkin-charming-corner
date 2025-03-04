@@ -39,20 +39,19 @@ export const withDatabase = async <T>(
   
   // Prüfen, ob wir im Browser-Kontext sind
   if (isBrowser) {
-    console.log("Browser-Kontext erkannt: Die Anfrage wird zum Server weitergeleitet");
+    console.log("Browser-Kontext erkannt: Die Anfrage wird simuliert für Demo-Zwecke");
     
-    // Im Browser simulieren wir den Datenbankzugriff für die Demo
-    // In einer echten Implementierung würde hier ein fetch zum Backend erfolgen
     try {
-      // Simulierte Daten für Demo-Zwecke zurückgeben
+      // In der Demo-Umgebung simulieren wir die Datenbankoperationen
+      // Im echten System würde hier ein Fetch-Request zum API-Server stattfinden
       return Promise.resolve({
         success: true,
         message: "Operation erfolgreich (simuliert im Browser)",
-        data: null
+        data: []
       } as any);
     } catch (error) {
       console.error("Fehler bei der simulierten Operation:", error);
-      throw new Error(`Fehler bei der API-Anfrage: ${error.message}`);
+      throw new Error("Datenbankzugriff im Browser nicht möglich - Bitte verwenden Sie die API-Funktionen");
     }
   }
   
