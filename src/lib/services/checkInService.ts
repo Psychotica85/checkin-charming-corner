@@ -4,6 +4,7 @@ import { CheckIn } from '../database/models';
 import { withDatabase } from '../database/connection';
 import { generateCheckInReport } from '../pdfGenerator';
 import { getDocuments } from './documentService';
+import { sendEmailWithPDF } from './emailService';
 
 // Browser-Erkennung
 const isBrowser = typeof window !== 'undefined';
@@ -39,6 +40,27 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
       };
       reader.readAsDataURL(pdfBlob);
     });
+    
+    // E-Mail mit PDF-Anhang senden (nur im Node-Umfeld)
+    if (!isBrowser) {
+      const visitorName = `${data.firstName || ''} ${data.lastName || ''}`.trim() || data.fullName;
+      const emailSubject = `Neuer Besucher-Check-in: ${visitorName} (${data.company})`;
+      const pdfFilename = `checkin-${visitorName.replace(/\s+/g, '-')}-${new Date().getTime()}.pdf`;
+      
+      // E-Mail asynchron senden (wir warten nicht auf das Ergebnis, um den Check-in-Prozess nicht zu verlangsamen)
+      sendEmailWithPDF(
+        emailSubject,
+        pdfBase64,
+        pdfFilename,
+        visitorName,
+        data.company,
+        data.visitReason || 'Nicht angegeben'
+      ).then((emailResult) => {
+        console.log('E-Mail-Versandergebnis:', emailResult);
+      }).catch((error) => {
+        console.error('Fehler beim E-Mail-Versand:', error);
+      });
+    }
     
     return withDatabase(
       // Diese Funktion wird im Server ausgeführt

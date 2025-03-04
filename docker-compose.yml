@@ -12,6 +12,13 @@ services:
       - NODE_ENV=production
       - VITE_ADMIN_USERNAME=admin
       - VITE_ADMIN_PASSWORD=admin
+      # SMTP-Konfiguration für E-Mail-Versand
+      - VITE_SMTP_HOST=smtp.example.com
+      - VITE_SMTP_PORT=587
+      - VITE_SMTP_USER=user@example.com
+      - VITE_SMTP_PASS=yourpassword
+      - VITE_SMTP_FROM=noreply@example.com
+      - VITE_SMTP_TO=recipient@example.com
     volumes:
       - ./data:/app/data
     restart: unless-stopped
