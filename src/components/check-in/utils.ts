@@ -12,6 +12,21 @@ export const generateTimeOptions = () => {
   return times;
 };
 
+// Function to get current time rounded to nearest 15 minutes
+export const getCurrentTimeOption = () => {
+  const now = new Date();
+  const minutes = now.getMinutes();
+  const roundedMinutes = Math.round(minutes / 15) * 15;
+  now.setMinutes(roundedMinutes);
+  now.setSeconds(0);
+  now.setMilliseconds(0);
+  
+  const hours = now.getHours().toString().padStart(2, '0');
+  const mins = now.getMinutes().toString().padStart(2, '0');
+  
+  return `${hours}:${mins}`;
+};
+
 export const formSteps = [
   {
     title: "Willkommen",
