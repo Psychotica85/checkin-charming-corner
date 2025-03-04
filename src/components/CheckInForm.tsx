@@ -39,7 +39,7 @@ const CheckInForm = () => {
   }
 
   return (
-    <div className="w-full px-6 py-8 rounded-2xl space-y-6 animate-fade-in border border-border bg-background/50 backdrop-blur-sm">
+    <div className="w-full px-6 py-8 rounded-2xl space-y-6 animate-fade-in border border-border bg-card shadow-sm">
       {/* Progress indicator */}
       <StepIndicator steps={formSteps} currentStep={currentStep} />
 

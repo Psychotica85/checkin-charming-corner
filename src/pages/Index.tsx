@@ -6,11 +6,11 @@ import { Link } from "react-router-dom";
 
 const Index = () => {
   return (
-    <div className="min-h-screen w-full flex flex-col bg-gradient-to-br from-background to-muted">
+    <div className="min-h-screen w-full flex flex-col bg-background">
       <Toaster position="top-center" />
       
       {/* Header */}
-      <header className="w-full py-6 px-4 sm:px-6 border-b border-border/50 sticky top-0 z-10">
+      <header className="w-full py-6 px-4 sm:px-6 border-b sticky top-0 z-10 bg-background">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Logo />
           <div className="flex items-center gap-4">
@@ -73,7 +73,7 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="w-full py-4 px-6 text-center text-sm text-muted-foreground">
+      <footer className="w-full py-4 px-6 text-center text-sm text-muted-foreground bg-background">
         <p>&copy; {new Date().getFullYear()} Ihr Unternehmen. Alle Rechte vorbehalten.</p>
       </footer>
     </div>
