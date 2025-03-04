@@ -21,7 +21,7 @@ RUN sed -i 's/\r$//' start.sh
 # Anwendung bauen
 RUN npm run build
 
-# Verzeichnis für SQLite-Datenbank erstellen
+# Verzeichnis für SQLite-Datenbank erstellen mit richtigen Berechtigungen
 RUN mkdir -p /app/data
 RUN chmod -R 777 /app/data
 
@@ -45,5 +45,5 @@ ENV VITE_ADMIN_PASSWORD=admin
 # Port freigeben
 EXPOSE 3000
 
-# Anwendung direkt starten ohne Shell-Skript
-CMD ["/bin/sh", "-c", "node server.js"]
+# Anwendung über das Shell-Skript starten
+CMD ["/bin/sh", "start.sh"]

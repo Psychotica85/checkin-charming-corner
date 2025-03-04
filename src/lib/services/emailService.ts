@@ -33,7 +33,7 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
     return true;
   } else {
     try {
-      // Server-Umgebung: Nodemailer verwenden (wird asynchron importiert, um Browser-Fehler zu vermeiden)
+      // Server-Umgebung: Nodemailer verwenden
       const nodemailer = await import('nodemailer');
       
       // SMTP-Konfiguration aus Umgebungsvariablen
@@ -42,6 +42,14 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
       const user = process.env.VITE_SMTP_USER;
       const pass = process.env.VITE_SMTP_PASS;
       const from = process.env.VITE_SMTP_FROM;
+      
+      console.log('SMTP-Konfiguration:', { 
+        host, 
+        port, 
+        user: user ? '***' : 'nicht konfiguriert', 
+        pass: pass ? '***' : 'nicht konfiguriert',
+        from 
+      });
       
       // Wenn keine SMTP-Konfiguration vorhanden ist, Fehler loggen und simulieren
       if (!host || !user || !pass || !from) {
@@ -55,15 +63,25 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
       const transporter = nodemailer.createTransport({
         host,
         port,
-        secure: port === 465,
+        secure: port === 465, // true für 465, false für andere Ports
         auth: {
           user,
           pass
-        }
+        },
+        tls: {
+          // TLS-Konfiguration für bessere Kompatibilität
+          rejectUnauthorized: false
+        },
+        debug: true // Debug aktivieren
       });
       
+      // Überprüfen, ob Verbindung hergestellt werden kann
+      console.log('Überprüfe SMTP-Verbindung...');
+      await transporter.verify();
+      console.log('SMTP-Verbindung erfolgreich hergestellt');
+      
       // E-Mail senden
-      await transporter.sendMail({
+      const info = await transporter.sendMail({
         from,
         to: options.to,
         subject: options.subject,
@@ -72,6 +90,7 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
       });
       
       console.log('E-Mail erfolgreich gesendet an:', options.to);
+      console.log('Nodemailer Antwort:', info.response);
       return true;
     } catch (error) {
       console.error('Fehler beim E-Mail-Versand:', error);
@@ -105,6 +124,8 @@ export const sendEmailWithPDF = async (
     const recipientEmail = isBrowser 
       ? 'empfaenger@example.com' 
       : (process.env.VITE_SMTP_TO || 'empfaenger@example.com');
+    
+    console.log('E-Mail-Empfänger:', recipientEmail);
     
     // HTML-Inhalt der E-Mail
     const htmlContent = `

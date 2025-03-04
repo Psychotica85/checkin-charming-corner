@@ -24,10 +24,26 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Stelle sicher, dass das Datenverzeichnis existiert
-const dataDir = path.join(__dirname, 'data');
+const dataDir = path.join('/app', 'data');
 if (!fs.existsSync(dataDir)) {
   console.log(`Erstelle Datenverzeichnis: ${dataDir}`);
   fs.mkdirSync(dataDir, { recursive: true });
+} else {
+  console.log(`Datenverzeichnis existiert bereits: ${dataDir}`);
+  // Alle Dateien im Verzeichnis anzeigen
+  const files = fs.readdirSync(dataDir);
+  console.log(`Dateien im Datenverzeichnis: ${files.length > 0 ? files.join(', ') : 'keine'}`);
+}
+
+// Teste Schreibberechtigung
+try {
+  const testFile = path.join(dataDir, 'test.txt');
+  fs.writeFileSync(testFile, 'Test Schreibberechtigung');
+  console.log(`Schreibtest erfolgreich: ${testFile}`);
+  // Datei nach Test löschen
+  fs.unlinkSync(testFile);
+} catch (error) {
+  console.error(`Fehler beim Schreibtest: ${error.message}`);
 }
 
 // Logging Middleware
@@ -41,7 +57,22 @@ app.use(express.static(path.join(__dirname, 'dist')));
 
 // Health-Check-Route
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'online', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'online', 
+    timestamp: new Date().toISOString(),
+    env: {
+      NODE_ENV: process.env.NODE_ENV,
+      SMTP_HOST: process.env.VITE_SMTP_HOST ? 'gesetzt' : 'nicht gesetzt',
+      SMTP_PORT: process.env.VITE_SMTP_PORT,
+      SMTP_USER: process.env.VITE_SMTP_USER ? 'gesetzt' : 'nicht gesetzt',
+      SMTP_FROM: process.env.VITE_SMTP_FROM
+    },
+    paths: {
+      dataDir,
+      cwd: process.cwd(),
+      __dirname
+    }
+  });
 });
 
 // API-Routen hier definieren, falls benötigt
@@ -74,9 +105,17 @@ app.listen(PORT, () => {
                          process.env.VITE_SMTP_PASS;
   
   if (smtpConfigured) {
-    console.log(`SMTP konfiguriert: ${process.env.VITE_SMTP_HOST}`);
+    console.log(`SMTP konfiguriert: ${process.env.VITE_SMTP_HOST}:${process.env.VITE_SMTP_PORT}`);
+    console.log(`SMTP Benutzer: ${process.env.VITE_SMTP_USER}`);
+    console.log(`E-Mail-Empfänger: ${process.env.VITE_SMTP_TO || 'nicht gesetzt'}`);
   } else {
-    console.log('SMTP nicht konfiguriert, E-Mail-Versand wird simuliert');
+    console.log('SMTP nicht vollständig konfiguriert:');
+    console.log(`- Host: ${process.env.VITE_SMTP_HOST || 'nicht gesetzt'}`);
+    console.log(`- Port: ${process.env.VITE_SMTP_PORT || 'nicht gesetzt'}`);
+    console.log(`- User: ${process.env.VITE_SMTP_USER || 'nicht gesetzt'}`);
+    console.log(`- From: ${process.env.VITE_SMTP_FROM || 'nicht gesetzt'}`);
+    console.log(`- To: ${process.env.VITE_SMTP_TO || 'nicht gesetzt'}`);
+    console.log('E-Mail-Versand wird simuliert');
   }
   
   console.log('\nZugriff auf die Anwendung:');

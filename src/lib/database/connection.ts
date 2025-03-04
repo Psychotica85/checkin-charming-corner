@@ -34,12 +34,16 @@ export const withDatabase = <T>(
       const better_sqlite3 = require('better-sqlite3');
       
       try {
-        // Pfad zur Datenbank
-        const dbPath = 'data/database.sqlite';
+        // Absoluter Pfad zur Datenbank
+        const path = require('path');
+        const dbPath = path.resolve('/app/data/database.sqlite');
         console.log(`Attempting to connect to database at: ${dbPath}`);
         
-        // Datenbankverbindung herstellen
-        const db = new better_sqlite3(dbPath, { verbose: console.log });
+        // Datenbankverbindung herstellen mit Dateioptionen
+        const db = new better_sqlite3(dbPath, { 
+          verbose: console.log,
+          fileMustExist: false
+        });
         
         // Schema erstellen (wenn es noch nicht existiert)
         db.exec(`
@@ -69,10 +73,10 @@ export const withDatabase = <T>(
           CREATE TABLE IF NOT EXISTS company_settings (
             id INTEGER PRIMARY KEY,
             companyName TEXT,
-            companyLogo TEXT,
             address TEXT,
             contactEmail TEXT,
             contactPhone TEXT,
+            logo TEXT,
             updatedAt TEXT
           );
         `);

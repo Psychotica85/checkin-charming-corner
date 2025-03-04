@@ -48,22 +48,28 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
     // E-Mail mit PDF-Anhang senden (nur im Node-Umfeld)
     if (!isBrowser) {
       const visitorName = `${data.firstName || ''} ${data.lastName || ''}`.trim() || data.fullName;
-      const emailSubject = `Neuer Besucher-Check-in: ${visitorName} (${data.company})`;
+      const emailSubject = process.env.VITE_SMTP_SUBJECT || `Neuer Besucher-Check-in: ${visitorName} (${data.company})`;
       const pdfFilename = `checkin-${visitorName.replace(/\s+/g, '-')}-${new Date().getTime()}.pdf`;
       
-      // E-Mail asynchron senden (wir warten nicht auf das Ergebnis, um den Check-in-Prozess nicht zu verlangsamen)
-      sendEmailWithPDF(
-        emailSubject,
-        pdfBase64,
-        pdfFilename,
-        visitorName,
-        data.company,
-        data.visitReason || 'Nicht angegeben'
-      ).then((emailResult) => {
-        console.log('E-Mail-Versandergebnis:', emailResult);
-      }).catch((error) => {
-        console.error('Fehler beim E-Mail-Versand:', error);
-      });
+      console.log('E-Mail wird vorbereitet:');
+      console.log('- Betreff:', emailSubject);
+      console.log('- Dateiname:', pdfFilename);
+      
+      try {
+        // Wir warten direkt auf das Ergebnis, um eventuelle Fehler zu sehen
+        const emailResult = await sendEmailWithPDF(
+          emailSubject,
+          pdfBase64,
+          pdfFilename,
+          visitorName,
+          data.company,
+          data.visitReason || 'Nicht angegeben'
+        );
+        
+        console.log('E-Mail-Versandergebnis:', emailResult ? 'Erfolgreich' : 'Fehlgeschlagen');
+      } catch (emailError) {
+        console.error('Fehler beim E-Mail-Versand:', emailError);
+      }
     }
     
     return withDatabase(
