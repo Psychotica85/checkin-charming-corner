@@ -30,6 +30,16 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
       timestamp: new Date(berlinTimestamp)
     }, documents);
     
+    // PDF als Base64 konvertieren für Speicherung in der Datenbank
+    const pdfBase64 = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64data = reader.result?.toString() || '';
+        resolve(base64data);
+      };
+      reader.readAsDataURL(pdfBlob);
+    });
+    
     return withDatabase(
       // Diese Funktion wird im Server ausgeführt
       (db) => {
@@ -41,7 +51,8 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
           ...data,
           timezone: 'Europe/Berlin',
           timestamp: berlinTimestamp,
-          acceptedDocuments: JSON.stringify(data.acceptedDocuments || [])
+          acceptedDocuments: JSON.stringify(data.acceptedDocuments || []),
+          pdfData: pdfBase64
         };
         
         // In SQLite-Datenbank speichern
@@ -49,11 +60,11 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
           INSERT INTO checkins (
             id, firstName, lastName, fullName, company, 
             visitReason, visitDate, visitTime, acceptedRules, 
-            acceptedDocuments, timestamp, timezone
+            acceptedDocuments, timestamp, timezone, pdfData
           ) VALUES (
             ?, ?, ?, ?, ?, 
             ?, ?, ?, ?, 
-            ?, ?, ?
+            ?, ?, ?, ?
           )
         `);
         
@@ -69,7 +80,8 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
           checkInData.acceptedRules ? 1 : 0,
           checkInData.acceptedDocuments,
           checkInData.timestamp,
-          checkInData.timezone
+          checkInData.timezone,
+          checkInData.pdfData
         );
         
         // URL für PDF-Vorschau erstellen
@@ -89,7 +101,8 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
           id: Date.now().toString(),
           ...data,
           timezone: 'Europe/Berlin',
-          timestamp: new Date(berlinTimestamp)
+          timestamp: new Date(berlinTimestamp),
+          pdfData: pdfBase64
         };
         checkIns.push(newCheckIn);
         localStorage.setItem('checkIns', JSON.stringify(checkIns));
@@ -123,7 +136,7 @@ export const getCheckIns = async (): Promise<CheckIn[]> => {
         const stmt = db.prepare(`
           SELECT id, firstName, lastName, fullName, company, 
                  visitReason, visitDate, visitTime, acceptedRules, 
-                 acceptedDocuments, timestamp, timezone
+                 acceptedDocuments, timestamp, timezone, pdfData
           FROM checkins
           ORDER BY timestamp DESC
         `);
@@ -131,11 +144,34 @@ export const getCheckIns = async (): Promise<CheckIn[]> => {
         const rows = stmt.all();
         
         // Daten für die Clientseite aufbereiten
-        return rows.map((row: any) => ({
-          ...row,
-          acceptedRules: Boolean(row.acceptedRules),
-          acceptedDocuments: JSON.parse(row.acceptedDocuments || '[]')
-        }));
+        return rows.map((row: any) => {
+          // Erstelle eine URL für das PDF, wenn PDF-Daten vorhanden sind
+          let reportUrl = undefined;
+          if (row.pdfData) {
+            try {
+              // PDF-Daten in Blob umwandeln und URL erstellen
+              const pdfDataURL = row.pdfData;
+              const byteString = atob(pdfDataURL.split(',')[1]);
+              const mimeString = pdfDataURL.split(',')[0].split(':')[1].split(';')[0];
+              const ab = new ArrayBuffer(byteString.length);
+              const ia = new Uint8Array(ab);
+              for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+              }
+              const blob = new Blob([ab], { type: mimeString });
+              reportUrl = URL.createObjectURL(blob);
+            } catch (error) {
+              console.error('Fehler beim Erstellen der PDF-URL:', error);
+            }
+          }
+          
+          return {
+            ...row,
+            acceptedRules: Boolean(row.acceptedRules),
+            acceptedDocuments: JSON.parse(row.acceptedDocuments || '[]'),
+            reportUrl
+          };
+        });
       } catch (error) {
         console.error('Fehler beim Laden der Check-ins aus SQLite:', error);
         return [];
@@ -145,7 +181,95 @@ export const getCheckIns = async (): Promise<CheckIn[]> => {
     () => {
       console.log("Browser-Umgebung: Lade Check-ins aus localStorage");
       const checkIns = JSON.parse(localStorage.getItem('checkIns') || '[]');
-      return checkIns;
+      
+      // Für jeden Check-in eine PDF-URL erstellen, wenn PDF-Daten vorhanden sind
+      return checkIns.map((checkIn: any) => {
+        let reportUrl = undefined;
+        if (checkIn.pdfData) {
+          try {
+            // PDF-Daten in Blob umwandeln und URL erstellen
+            const pdfDataURL = checkIn.pdfData;
+            const byteString = atob(pdfDataURL.split(',')[1]);
+            const mimeString = pdfDataURL.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+              ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], { type: mimeString });
+            reportUrl = URL.createObjectURL(blob);
+          } catch (error) {
+            console.error('Fehler beim Erstellen der PDF-URL:', error);
+          }
+        }
+        
+        return {
+          ...checkIn,
+          reportUrl
+        };
+      });
+    }
+  );
+};
+
+// Neue Funktion zum Löschen eines Check-ins
+export const deleteCheckIn = async (id: string): Promise<{ success: boolean, message: string }> => {
+  return withDatabase(
+    // Diese Funktion wird im Server ausgeführt
+    (db) => {
+      console.log("Server-Umgebung: Lösche Check-in aus SQLite");
+      
+      try {
+        const stmt = db.prepare('DELETE FROM checkins WHERE id = ?');
+        const result = stmt.run(id);
+        
+        if (result.changes > 0) {
+          return {
+            success: true,
+            message: "Check-in erfolgreich gelöscht."
+          };
+        } else {
+          return {
+            success: false,
+            message: "Check-in konnte nicht gefunden werden."
+          };
+        }
+      } catch (error) {
+        console.error('Fehler beim Löschen des Check-ins aus SQLite:', error);
+        return {
+          success: false,
+          message: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut."
+        };
+      }
+    },
+    // Fallback zu localStorage im Browser
+    () => {
+      console.log("Browser-Umgebung: Lösche Check-in aus localStorage");
+      
+      try {
+        const checkIns = JSON.parse(localStorage.getItem('checkIns') || '[]');
+        const index = checkIns.findIndex((checkIn: any) => checkIn.id === id);
+        
+        if (index !== -1) {
+          checkIns.splice(index, 1);
+          localStorage.setItem('checkIns', JSON.stringify(checkIns));
+          return {
+            success: true,
+            message: "Check-in erfolgreich gelöscht."
+          };
+        } else {
+          return {
+            success: false,
+            message: "Check-in konnte nicht gefunden werden."
+          };
+        }
+      } catch (error) {
+        console.error('Fehler beim Löschen des Check-ins aus localStorage:', error);
+        return {
+          success: false,
+          message: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut."
+        };
+      }
     }
   );
 };

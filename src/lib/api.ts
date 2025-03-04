@@ -2,7 +2,7 @@
 // API interface with SQLite and email functionality
 // This file re-exports all functionality from our service modules
 
-export { submitCheckIn, getCheckIns } from './services/checkInService';
+export { submitCheckIn, getCheckIns, deleteCheckIn } from './services/checkInService';
 export { getDocuments, saveDocument, deleteDocument } from './services/documentService';
 export { 
   getUsers, createUser, updateUser, deleteUser, authenticateUser 

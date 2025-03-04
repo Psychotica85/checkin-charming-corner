@@ -7,11 +7,21 @@ import { toast } from "sonner";
 import Logo from "@/components/Logo";
 import { Toaster } from "sonner";
 import PDFUploader from "@/components/PDFUploader";
-import { getCheckIns, authenticateUser } from "@/lib/api";
+import { getCheckIns, deleteCheckIn, authenticateUser } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { Link } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Vereinfachte User-Schnittstelle für die Admin-Komponente
 interface User {
@@ -29,6 +39,8 @@ const Admin = () => {
   const [checkIns, setCheckIns] = useState<any[]>([]);
   const [isLoadingCheckIns, setIsLoadingCheckIns] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [deletingCheckIn, setDeletingCheckIn] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     // Check if admin is already logged in
@@ -62,7 +74,9 @@ const Admin = () => {
     setLoading(true);
 
     try {
+      console.log("Versuche Anmeldung mit:", username, password);
       const result = await authenticateUser(username, password);
+      console.log("Authentifizierungsergebnis:", result);
       
       if (result.success && result.user) {
         localStorage.setItem("adminAuthenticated", "true");
@@ -90,6 +104,35 @@ const Admin = () => {
     toast.success("Abgemeldet");
   };
 
+  const openDeleteDialog = (id: string) => {
+    setDeletingCheckIn(id);
+    setShowDeleteDialog(true);
+  };
+
+  const closeDeleteDialog = () => {
+    setShowDeleteDialog(false);
+    setDeletingCheckIn(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingCheckIn) return;
+    
+    try {
+      const result = await deleteCheckIn(deletingCheckIn);
+      if (result.success) {
+        toast.success(result.message);
+        loadCheckIns(); // Neu laden nach dem Löschen
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error("Error deleting check-in:", error);
+      toast.error("Fehler beim Löschen des Check-Ins");
+    } finally {
+      closeDeleteDialog();
+    }
+  };
+
   const formatDate = (dateString: string) => {
     try {
       return format(new Date(dateString), "dd.MM.yyyy HH:mm", { locale: de });
@@ -104,7 +147,7 @@ const Admin = () => {
         <Toaster position="top-center" />
         
         {/* Header */}
-        <header className="w-full py-6 px-4 sm:px-6 glass border-b border-border/50 sticky top-0 z-10">
+        <header className="w-full py-6 px-4 sm:px-6 glass border-b border-border/50 sticky top-0 z-10 bg-background/95 backdrop-blur">
           <div className="max-w-7xl mx-auto flex justify-between items-center">
             <Logo />
             <div className="flex items-center gap-4">
@@ -181,6 +224,7 @@ const Admin = () => {
                             <th className="p-3 font-medium">Erstellungsdatum</th>
                             <th className="p-3 font-medium">Dokumente</th>
                             <th className="p-3 font-medium">PDF</th>
+                            <th className="p-3 font-medium">Aktionen</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -228,6 +272,23 @@ const Admin = () => {
                                   <span className="text-muted-foreground">N/A</span>
                                 )}
                               </td>
+                              <td className="p-3">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => openDeleteDialog(checkIn.id)}
+                                  className="text-destructive hover:bg-destructive/10"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                  </svg>
+                                  <span className="sr-only">Löschen</span>
+                                </Button>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -244,6 +305,30 @@ const Admin = () => {
         <footer className="w-full py-4 px-6 text-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Ihr Unternehmen. Alle Rechte vorbehalten.</p>
         </footer>
+
+        {/* Lösch-Bestätigungsdialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Check-In löschen</AlertDialogTitle>
+              <AlertDialogDescription>
+                Sind Sie sicher, dass Sie diesen Check-In löschen möchten? 
+                Diese Aktion kann nicht rückgängig gemacht werden.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={closeDeleteDialog}>
+                Abbrechen
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={confirmDelete}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                Löschen
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }

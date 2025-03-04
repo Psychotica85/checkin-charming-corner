@@ -23,8 +23,8 @@ RUN chmod 777 /app/data
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV ADMIN_USERNAME=admin
-ENV ADMIN_PASSWORD=admin
+ENV VITE_ADMIN_USERNAME=admin
+ENV VITE_ADMIN_PASSWORD=admin
 
 # Expose port
 EXPOSE 3000
