@@ -14,16 +14,6 @@ declare global {
 window.IS_BROWSER = true;
 
 // Für Entwicklungszwecke: Lokalen Speicher vorbereiten, wenn er noch nicht existiert
-if (!localStorage.getItem('users')) {
-  localStorage.setItem('users', JSON.stringify([{
-    id: '1',
-    username: 'admin',
-    password: 'admin',
-    role: 'admin',
-    createdAt: new Date().toISOString()
-  }]));
-}
-
 if (!localStorage.getItem('documents')) {
   localStorage.setItem('documents', JSON.stringify([]));
 }

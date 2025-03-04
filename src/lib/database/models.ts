@@ -13,7 +13,7 @@ export interface User {
   id: string;
   username: string;
   password: string;
-  role: string;
+  role: 'admin' | 'user'; // Typed role für bessere Typsicherheit
   createdAt: string; // ISO string format
 }
 
@@ -32,6 +32,7 @@ export interface CheckIn {
   timestamp: Date | string;
   timezone?: string;
   pdfData?: string; // base64-encoded PDF
+  reportUrl?: string; // URL to generated PDF report
 }
 
 // Hilfstypen für Backend-Operationen

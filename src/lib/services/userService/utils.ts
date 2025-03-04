@@ -1,8 +1,6 @@
 
-import { connectToDatabase, withDatabase } from '../../database/connection';
-
 // Browser-Erkennung
-const isBrowser = typeof window !== 'undefined';
+export const isBrowser = typeof window !== 'undefined' && window.IS_BROWSER === true;
 
 // Rollenzuordnungs-Hilfsfunktionen
 export const mapDatabaseRoleToFrontendRole = (role: 'ADMIN' | 'USER'): 'admin' | 'user' => {
@@ -12,6 +10,3 @@ export const mapDatabaseRoleToFrontendRole = (role: 'ADMIN' | 'USER'): 'admin' |
 export const mapFrontendRoleToDatabaseRole = (role: 'admin' | 'user'): 'ADMIN' | 'USER' => {
   return role === 'admin' ? 'ADMIN' : 'USER';
 };
-
-// Re-export the withDatabase function from connection.ts
-export { withDatabase };

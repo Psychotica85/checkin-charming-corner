@@ -23,6 +23,9 @@ WORKDIR /app
 RUN apk add --no-cache python3 make g++
 
 # Environment variables
+ENV NODE_ENV=production
+ENV VITE_ADMIN_USERNAME=admin
+ENV VITE_ADMIN_PASSWORD=admin
 ENV VITE_SMTP_HOST=smtp.example.com
 ENV VITE_SMTP_PORT=587
 ENV VITE_SMTP_USER=user

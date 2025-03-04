@@ -8,7 +8,7 @@ Eine moderne Webanwendung für Besucher-Check-ins mit Dokumentenverwaltung und a
 - Digitaler Check-in für Besucher
 - Upload und Akzeptanz von PDF-Dokumenten
 - Automatische PDF-Berichtgenerierung für jeden Check-in
-- Admin-Portal mit Benutzerverwaltung
+- Admin-Portal mit Dokumentenverwaltung
 - SQLite-Integration für zuverlässige Datenspeicherung ohne externe Abhängigkeiten
 - Responsives Design für alle Geräte
 
@@ -18,6 +18,8 @@ Die Anwendung verwendet folgende Umgebungsvariablen:
 
 | Variable | Beschreibung | Format | Beispiel |
 |----------|-------------|--------|---------|
+| `VITE_ADMIN_USERNAME` | Admin-Benutzername | string | admin |
+| `VITE_ADMIN_PASSWORD` | Admin-Passwort | string | admin |
 | `VITE_SMTP_HOST` | SMTP-Server-Hostname | string | smtp.example.com |
 | `VITE_SMTP_PORT` | SMTP-Server-Port | number | 587 |
 | `VITE_SMTP_USER` | SMTP-Benutzername | string | user@example.com |
@@ -40,21 +42,20 @@ npm run dev
 
 ## SQLite-Setup
 
-Die Anwendung verwendet SQLite für die Datenspeicherung, was keine zusätzliche Installation erfordert:
+Die Anwendung verwendet SQLite für die Datenspeicherung (nur für Check-Ins und Dokumente), was keine zusätzliche Installation erfordert:
 
 1. Die SQLite-Datenbank wird automatisch im `data/`-Verzeichnis erstellt
 2. Alle erforderlichen Tabellen werden beim ersten Start automatisch erstellt:
-   - `users` - Speichert Benutzerkonten und Rollen
    - `documents` - Speichert PDF-Dokumente für Besucher zum Akzeptieren
    - `checkIns` - Speichert Besucher-Check-in-Daten
 
-## Standard-Login
+## Admin-Anmeldung
 
-Das System erstellt beim ersten Start einen Standard-Admin-Benutzer:
-- **Benutzername:** admin
-- **Passwort:** admin
-
-*Wichtig: Ändern Sie dieses Passwort sofort nach dem ersten Login.*
+Das System verwendet einen einzelnen Admin-Benutzer:
+- **Standardmäßige Anmeldedaten:** 
+  - Benutzername: admin
+  - Passwort: admin
+- Diese können über die Umgebungsvariablen `VITE_ADMIN_USERNAME` und `VITE_ADMIN_PASSWORD` geändert werden.
 
 ## Deployment
 

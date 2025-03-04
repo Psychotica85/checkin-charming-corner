@@ -8,6 +8,8 @@ services:
       - "8080:8080"
     environment:
       - NODE_ENV=production
+      - VITE_ADMIN_USERNAME=admin
+      - VITE_ADMIN_PASSWORD=admin
       - VITE_SMTP_HOST=smtp.example.com
       - VITE_SMTP_PORT=587
       - VITE_SMTP_USER=user
