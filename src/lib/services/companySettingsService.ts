@@ -15,7 +15,7 @@ export const getCompanySettings = async (): Promise<CompanySettings> => {
   return withDatabase(
     // Server-Umgebung (SQLite)
     (db) => {
-      console.log("Server-Umgebung: Lade Unternehmenseinstellungen");
+      console.log("Lade Unternehmenseinstellungen aus Datenbank");
       
       try {
         // Erstelle die Tabelle, falls sie noch nicht existiert
@@ -32,6 +32,7 @@ export const getCompanySettings = async (): Promise<CompanySettings> => {
         const settings = db.prepare('SELECT * FROM company_settings WHERE id = ?').get('1');
         
         if (settings) {
+          console.log("Vorhandene Unternehmenseinstellungen geladen");
           return settings as CompanySettings;
         } else {
           // Standardeinstellungen einfügen
@@ -47,29 +48,12 @@ export const getCompanySettings = async (): Promise<CompanySettings> => {
             DEFAULT_SETTINGS.updatedAt
           );
           
+          console.log("Standardeinstellungen in Datenbank angelegt");
           return DEFAULT_SETTINGS;
         }
       } catch (error) {
         console.error('Fehler beim Laden der Unternehmenseinstellungen:', error);
-        return DEFAULT_SETTINGS;
-      }
-    },
-    // Browser-Umgebung (localStorage)
-    () => {
-      console.log("Browser-Umgebung: Lade Unternehmenseinstellungen aus localStorage");
-      
-      try {
-        const settings = localStorage.getItem('companySettings');
-        if (settings) {
-          return JSON.parse(settings) as CompanySettings;
-        } else {
-          // Standardeinstellungen speichern
-          localStorage.setItem('companySettings', JSON.stringify(DEFAULT_SETTINGS));
-          return DEFAULT_SETTINGS;
-        }
-      } catch (error) {
-        console.error('Fehler beim Laden der Unternehmenseinstellungen aus localStorage:', error);
-        return DEFAULT_SETTINGS;
+        throw error; // Fehler weiterleiten
       }
     }
   );
@@ -78,62 +62,50 @@ export const getCompanySettings = async (): Promise<CompanySettings> => {
 // Speichert aktualisierte Unternehmenseinstellungen
 export const updateCompanySettings = async (settings: Partial<CompanySettings>): Promise<{ success: boolean, message: string }> => {
   // Aktuelle Einstellungen laden und aktualisieren
-  const currentSettings = await getCompanySettings();
-  const updatedSettings: CompanySettings = {
-    ...currentSettings,
-    ...settings,
-    id: '1', // Immer die gleiche ID verwenden
-    updatedAt: new Date().toISOString()
-  };
-  
-  return withDatabase(
-    // Server-Umgebung (SQLite)
-    (db) => {
-      console.log("Server-Umgebung: Aktualisiere Unternehmenseinstellungen");
-      
-      try {
-        const stmt = db.prepare(`
-          UPDATE company_settings
-          SET address = ?, logo = ?, updatedAt = ?
-          WHERE id = ?
-        `);
+  try {
+    const currentSettings = await getCompanySettings();
+    const updatedSettings: CompanySettings = {
+      ...currentSettings,
+      ...settings,
+      id: '1', // Immer die gleiche ID verwenden
+      updatedAt: new Date().toISOString()
+    };
+    
+    return withDatabase(
+      // Server-Umgebung (SQLite)
+      (db) => {
+        console.log("Aktualisiere Unternehmenseinstellungen in Datenbank");
         
-        stmt.run(
-          updatedSettings.address,
-          updatedSettings.logo,
-          updatedSettings.updatedAt,
-          updatedSettings.id
-        );
-        
-        return {
-          success: true,
-          message: "Unternehmenseinstellungen erfolgreich aktualisiert."
-        };
-      } catch (error) {
-        console.error('Fehler beim Aktualisieren der Unternehmenseinstellungen:', error);
-        return {
-          success: false,
-          message: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut."
-        };
+        try {
+          const stmt = db.prepare(`
+            UPDATE company_settings
+            SET address = ?, logo = ?, updatedAt = ?
+            WHERE id = ?
+          `);
+          
+          stmt.run(
+            updatedSettings.address,
+            updatedSettings.logo,
+            updatedSettings.updatedAt,
+            updatedSettings.id
+          );
+          
+          console.log("Unternehmenseinstellungen erfolgreich aktualisiert");
+          return {
+            success: true,
+            message: "Unternehmenseinstellungen erfolgreich aktualisiert."
+          };
+        } catch (error) {
+          console.error('Fehler beim Aktualisieren der Unternehmenseinstellungen:', error);
+          throw error; // Fehler weiterleiten
+        }
       }
-    },
-    // Browser-Umgebung (localStorage)
-    () => {
-      console.log("Browser-Umgebung: Aktualisiere Unternehmenseinstellungen in localStorage");
-      
-      try {
-        localStorage.setItem('companySettings', JSON.stringify(updatedSettings));
-        return {
-          success: true,
-          message: "Unternehmenseinstellungen erfolgreich aktualisiert."
-        };
-      } catch (error) {
-        console.error('Fehler beim Aktualisieren der Unternehmenseinstellungen in localStorage:', error);
-        return {
-          success: false,
-          message: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut."
-        };
-      }
-    }
-  );
+    );
+  } catch (error) {
+    console.error('Fehler beim Aktualisieren der Unternehmenseinstellungen:', error);
+    return {
+      success: false,
+      message: `Ein Fehler ist aufgetreten: ${error.message}`
+    };
+  }
 };

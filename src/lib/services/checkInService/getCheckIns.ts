@@ -6,9 +6,28 @@ export const getCheckIns = async (): Promise<CheckIn[]> => {
   return withDatabase(
     // Diese Funktion wird im Server ausgeführt
     (db) => {
-      console.log("Server-Umgebung: Lade Check-ins aus SQLite");
+      console.log("Lade Check-ins aus SQLite");
       
       try {
+        // Stelle sicher, dass die Tabelle existiert
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS checkins (
+            id TEXT PRIMARY KEY,
+            firstName TEXT,
+            lastName TEXT,
+            fullName TEXT NOT NULL,
+            company TEXT NOT NULL,
+            visitReason TEXT,
+            visitDate TEXT,
+            visitTime TEXT,
+            acceptedRules INTEGER DEFAULT 0,
+            acceptedDocuments TEXT,
+            timestamp TEXT NOT NULL,
+            timezone TEXT NOT NULL,
+            pdfData TEXT
+          );
+        `);
+        
         const stmt = db.prepare(`
           SELECT id, firstName, lastName, fullName, company, 
                  visitReason, visitDate, visitTime, acceptedRules, 
@@ -18,6 +37,7 @@ export const getCheckIns = async (): Promise<CheckIn[]> => {
         `);
         
         const rows = stmt.all();
+        console.log(`${rows.length} Check-ins aus Datenbank geladen`);
         
         // Daten für die Clientseite aufbereiten
         return rows.map((row: any) => {
@@ -50,40 +70,8 @@ export const getCheckIns = async (): Promise<CheckIn[]> => {
         });
       } catch (error) {
         console.error('Fehler beim Laden der Check-ins aus SQLite:', error);
-        return [];
+        throw error; // Fehler weiterleiten
       }
-    },
-    // Fallback zu localStorage im Browser
-    () => {
-      console.log("Browser-Umgebung: Lade Check-ins aus localStorage");
-      const checkIns = JSON.parse(localStorage.getItem('checkIns') || '[]');
-      
-      // Für jeden Check-in eine PDF-URL erstellen, wenn PDF-Daten vorhanden sind
-      return checkIns.map((checkIn: any) => {
-        let reportUrl = undefined;
-        if (checkIn.pdfData) {
-          try {
-            // PDF-Daten in Blob umwandeln und URL erstellen
-            const pdfDataURL = checkIn.pdfData;
-            const byteString = atob(pdfDataURL.split(',')[1]);
-            const mimeString = pdfDataURL.split(',')[0].split(':')[1].split(';')[0];
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++) {
-              ia[i] = byteString.charCodeAt(i);
-            }
-            const blob = new Blob([ab], { type: mimeString });
-            reportUrl = URL.createObjectURL(blob);
-          } catch (error) {
-            console.error('Fehler beim Erstellen der PDF-URL:', error);
-          }
-        }
-        
-        return {
-          ...checkIn,
-          reportUrl
-        };
-      });
     }
   );
 };
