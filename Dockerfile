@@ -5,7 +5,10 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Pakete für better-sqlite3 und andere Abhängigkeiten installieren
-RUN apk add --no-cache python3 make g++ ca-certificates
+RUN apk add --no-cache python3 make g++ ca-certificates sqlite
+
+# Diagnose-Tools für Fehlerbehebung hinzufügen
+RUN apk add --no-cache curl procps busybox-extras
 
 # Paketdateien kopieren und Abhängigkeiten installieren
 COPY package*.json ./
@@ -24,6 +27,7 @@ RUN npm run build
 # Verzeichnis für SQLite-Datenbank erstellen mit richtigen Berechtigungen
 RUN mkdir -p /app/data
 RUN chmod -R 777 /app/data
+RUN echo "Test" > /app/data/create_test.txt
 
 # Umgebungsvariablen setzen
 ENV NODE_ENV=production

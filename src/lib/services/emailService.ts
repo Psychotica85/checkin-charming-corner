@@ -46,21 +46,28 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
       console.log('SMTP-Konfiguration:', { 
         host, 
         port, 
-        user: user ? '***' : 'nicht konfiguriert', 
-        pass: pass ? '***' : 'nicht konfiguriert',
-        from 
+        user, 
+        from,
+        pass: pass ? '(gesetzt)' : '(nicht gesetzt)'
       });
       
       // Wenn keine SMTP-Konfiguration vorhanden ist, Fehler loggen und simulieren
       if (!host || !user || !pass || !from) {
-        console.warn('Keine vollständige SMTP-Konfiguration gefunden, E-Mail-Versand wird simuliert');
+        console.warn('Unvollständige SMTP-Konfiguration:');
+        console.warn('- SMTP_HOST:', host || 'nicht gesetzt');
+        console.warn('- SMTP_PORT:', port);
+        console.warn('- SMTP_USER:', user || 'nicht gesetzt');
+        console.warn('- SMTP_PASS:', pass ? 'gesetzt' : 'nicht gesetzt');
+        console.warn('- SMTP_FROM:', from || 'nicht gesetzt');
+        console.warn('E-Mail-Versand wird simuliert');
+        
         console.log('E-Mail würde gesendet werden an:', options.to);
         console.log('Betreff:', options.subject);
         return true;
       }
       
-      // Transporter konfigurieren
-      const transporter = nodemailer.createTransport({
+      // Transporter mit detaillierter Konfiguration
+      const transporterOptions = {
         host,
         port,
         secure: port === 465, // true für 465, false für andere Ports
@@ -72,15 +79,32 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
           // TLS-Konfiguration für bessere Kompatibilität
           rejectUnauthorized: false
         },
-        debug: true // Debug aktivieren
-      });
+        debug: true,
+        logger: true // Aktiviert detailliertes Logging
+      };
+      
+      console.log('Initialisiere SMTP-Transporter mit:', JSON.stringify({
+        ...transporterOptions,
+        auth: { user, pass: '***' }
+      }));
+      
+      const transporter = nodemailer.createTransport(transporterOptions);
       
       // Überprüfen, ob Verbindung hergestellt werden kann
       console.log('Überprüfe SMTP-Verbindung...');
-      await transporter.verify();
-      console.log('SMTP-Verbindung erfolgreich hergestellt');
+      try {
+        const verifyResult = await transporter.verify();
+        console.log('SMTP-Verbindung erfolgreich hergestellt:', verifyResult);
+      } catch (verifyError) {
+        console.error('SMTP-Verbindungstest fehlgeschlagen:', verifyError);
+        // Versuche trotzdem, die E-Mail zu senden
+      }
       
-      // E-Mail senden
+      // E-Mail mit detailliertem Logging senden
+      console.log('Sende E-Mail an:', options.to);
+      console.log('E-Mail-Betreff:', options.subject);
+      console.log('Anzahl der Anhänge:', options.attachments?.length || 0);
+      
       const info = await transporter.sendMail({
         from,
         to: options.to,
@@ -89,11 +113,16 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
         attachments: options.attachments
       });
       
-      console.log('E-Mail erfolgreich gesendet an:', options.to);
-      console.log('Nodemailer Antwort:', info.response);
+      console.log('E-Mail erfolgreich gesendet:', {
+        messageId: info.messageId,
+        response: info.response,
+        envelope: info.envelope
+      });
+      
       return true;
     } catch (error) {
       console.error('Fehler beim E-Mail-Versand:', error);
+      console.error('Stack-Trace:', error.stack);
       return false;
     }
   }
@@ -171,6 +200,7 @@ export const sendEmailWithPDF = async (
     });
   } catch (error) {
     console.error('Fehler beim Erstellen/Senden der E-Mail mit PDF-Anhang:', error);
+    console.error('Stack-Trace:', error.stack);
     return false;
   }
 };

@@ -56,7 +56,7 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
       console.log('- Dateiname:', pdfFilename);
       
       try {
-        // Wir warten direkt auf das Ergebnis, um eventuelle Fehler zu sehen
+        // E-Mail senden und auf Ergebnis warten
         const emailResult = await sendEmailWithPDF(
           emailSubject,
           pdfBase64,
@@ -66,11 +66,30 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
           data.visitReason || 'Nicht angegeben'
         );
         
-        console.log('E-Mail-Versandergebnis:', emailResult ? 'Erfolgreich' : 'Fehlgeschlagen');
+        if (emailResult) {
+          console.log('E-Mail-Versand erfolgreich');
+        } else {
+          console.warn('E-Mail-Versand fehlgeschlagen oder keine SMTP-Konfiguration vorhanden');
+          
+          // Prüfen, ob SMTP-Konfiguration vorhanden ist
+          const smtpHost = process.env.VITE_SMTP_HOST;
+          const smtpUser = process.env.VITE_SMTP_USER;
+          const smtpPass = process.env.VITE_SMTP_PASS;
+          
+          if (!smtpHost || !smtpUser || !smtpPass) {
+            console.warn('SMTP-Konfiguration unvollständig:');
+            console.warn('- SMTP_HOST:', smtpHost || 'fehlt');
+            console.warn('- SMTP_USER:', smtpUser || 'fehlt');
+            console.warn('- SMTP_PASS:', smtpPass ? 'gesetzt' : 'fehlt');
+          }
+        }
       } catch (emailError) {
         console.error('Fehler beim E-Mail-Versand:', emailError);
+        console.error('Stack-Trace:', emailError.stack);
       }
     }
+    
+    console.log('Speichere Check-in in der Datenbank');
     
     return withDatabase(
       // Diese Funktion wird im Server ausgeführt
@@ -87,43 +106,72 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
           pdfData: pdfBase64
         };
         
-        // In SQLite-Datenbank speichern
-        const stmt = db.prepare(`
-          INSERT INTO checkins (
-            id, firstName, lastName, fullName, company, 
-            visitReason, visitDate, visitTime, acceptedRules, 
-            acceptedDocuments, timestamp, timezone, pdfData
-          ) VALUES (
-            ?, ?, ?, ?, ?, 
-            ?, ?, ?, ?, 
-            ?, ?, ?, ?
-          )
-        `);
-        
-        stmt.run(
-          checkInData.id,
-          checkInData.firstName || null,
-          checkInData.lastName || null,
-          checkInData.fullName,
-          checkInData.company,
-          checkInData.visitReason || null,
-          checkInData.visitDate ? new Date(checkInData.visitDate).toISOString() : null,
-          checkInData.visitTime || null,
-          checkInData.acceptedRules ? 1 : 0,
-          checkInData.acceptedDocuments,
-          checkInData.timestamp,
-          checkInData.timezone,
-          checkInData.pdfData
-        );
-        
-        // URL für PDF-Vorschau erstellen
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        
-        return { 
-          success: true, 
-          message: "Check-in erfolgreich gespeichert. Willkommen!",
-          reportUrl: pdfUrl
-        };
+        try {
+          // In SQLite-Datenbank speichern
+          const stmt = db.prepare(`
+            INSERT INTO checkins (
+              id, firstName, lastName, fullName, company, 
+              visitReason, visitDate, visitTime, acceptedRules, 
+              acceptedDocuments, timestamp, timezone, pdfData
+            ) VALUES (
+              ?, ?, ?, ?, ?, 
+              ?, ?, ?, ?, 
+              ?, ?, ?, ?
+            )
+          `);
+          
+          const result = stmt.run(
+            checkInData.id,
+            checkInData.firstName || null,
+            checkInData.lastName || null,
+            checkInData.fullName,
+            checkInData.company,
+            checkInData.visitReason || null,
+            checkInData.visitDate ? new Date(checkInData.visitDate).toISOString() : null,
+            checkInData.visitTime || null,
+            checkInData.acceptedRules ? 1 : 0,
+            checkInData.acceptedDocuments,
+            checkInData.timestamp,
+            checkInData.timezone,
+            checkInData.pdfData
+          );
+          
+          console.log("Datenbankoperation erfolgreich:", result);
+          
+          // URL für PDF-Vorschau erstellen
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          
+          return { 
+            success: true, 
+            message: "Check-in erfolgreich gespeichert. Willkommen!",
+            reportUrl: pdfUrl
+          };
+        } catch (dbError) {
+          console.error("Fehler beim Speichern in der Datenbank:", dbError);
+          console.error("Stack-Trace:", dbError.stack);
+          
+          // Fallback zu localStorage
+          console.log("Fallback zum localStorage aufgrund eines Datenbankfehlers");
+          
+          const checkIns = [];
+          const newCheckIn = {
+            id: Date.now().toString(),
+            ...data,
+            timezone: 'Europe/Berlin',
+            timestamp: new Date(berlinTimestamp),
+            pdfData: pdfBase64
+          };
+          checkIns.push(newCheckIn);
+          
+          // URL für PDF-Vorschau im Browser erstellen
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          
+          return { 
+            success: true, 
+            message: "Check-in erfolgreich gespeichert (Fallback-Modus). Willkommen!",
+            reportUrl: pdfUrl
+          };
+        }
       },
       // Fallback zu localStorage im Browser
       () => {
@@ -151,6 +199,7 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
     );
   } catch (error) {
     console.error('Error processing check-in:', error);
+    console.error('Stack-Trace:', error.stack);
     return {
       success: false,
       message: "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut."

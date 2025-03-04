@@ -34,16 +34,26 @@ export const withDatabase = <T>(
       const better_sqlite3 = require('better-sqlite3');
       
       try {
-        // Absoluter Pfad zur Datenbank
-        const path = require('path');
-        const dbPath = path.resolve('/app/data/database.sqlite');
-        console.log(`Attempting to connect to database at: ${dbPath}`);
+        // Absoluter Pfad zur Datenbank mit korrekter Berechtigung
+        const dbPath = '/app/data/database.sqlite';
+        console.log(`Verbinden zur Datenbank unter: ${dbPath}`);
         
-        // Datenbankverbindung herstellen mit Dateioptionen
+        // Datenbankverbindung mit detaillierter Fehlerbehandlung
         const db = new better_sqlite3(dbPath, { 
           verbose: console.log,
           fileMustExist: false
         });
+        
+        // Debug-Ausgabe für Datenbankstatus
+        console.log(`Datenbank-Status: ${db ? 'Verbunden' : 'Nicht verbunden'}`);
+        
+        // Datenbank-Berechtigungen testen
+        try {
+          db.pragma('journal_mode = WAL');
+          console.log("Datenbank-Schreibtest erfolgreich (PRAGMA-Befehl)");
+        } catch (pragmaError) {
+          console.error("Fehler bei Datenbank-Schreibtest:", pragmaError);
+        }
         
         // Schema erstellen (wenn es noch nicht existiert)
         db.exec(`
@@ -81,7 +91,7 @@ export const withDatabase = <T>(
           );
         `);
         
-        console.log("Database schema created successfully");
+        console.log("Datenbankschema erfolgreich erstellt");
         
         // Führe die Funktion mit der Datenbankverbindung aus
         try {
@@ -90,10 +100,32 @@ export const withDatabase = <T>(
         } finally {
           // Schließe die Datenbankverbindung
           db.close();
-          console.log("Database connection closed");
+          console.log("Datenbankverbindung geschlossen");
         }
       } catch (dbError) {
         console.error('Fehler bei der Datenbankverbindung:', dbError);
+        // Versuche, die Datenbankdatei direkt zu erstellen
+        const fs = require('fs');
+        const path = require('path');
+        
+        try {
+          // Stelle sicher, dass der Ordner existiert
+          if (!fs.existsSync('/app/data')) {
+            fs.mkdirSync('/app/data', { recursive: true, mode: 0o777 });
+            console.log('Datenverzeichnis erstellt: /app/data');
+          }
+          
+          // Versuche, eine leere Datei zu erstellen
+          fs.writeFileSync('/app/data/test_db_access.txt', 'Datenbankzugriff testen');
+          console.log('Erfolgreich in Datenverzeichnis geschrieben');
+          
+          // Zugriffsberechtigungen anzeigen
+          const stats = fs.statSync('/app/data');
+          console.log(`Verzeichnisberechtigungen: ${stats.mode}`);
+        } catch (fsError) {
+          console.error('Fehler beim Dateisystemzugriff:', fsError);
+        }
+        
         // Fallback zum Browser-Verhalten im Falle eines Datenbankfehlers
         console.log("Fallback to browser implementation due to database error");
         return browserFunction();
