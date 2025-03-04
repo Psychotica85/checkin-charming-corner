@@ -32,17 +32,18 @@ export const withDatabase = <T>(
         db.exec(`
           CREATE TABLE IF NOT EXISTS checkins (
             id TEXT PRIMARY KEY,
-            firstName TEXT NOT NULL,
-            lastName TEXT NOT NULL,
-            email TEXT NOT NULL,
-            company TEXT,
-            host TEXT NOT NULL,
-            visitDate TEXT NOT NULL,
-            visitTime TEXT NOT NULL,
-            expectedDuration TEXT,
-            purpose TEXT,
+            firstName TEXT,
+            lastName TEXT,
+            fullName TEXT NOT NULL,
+            company TEXT NOT NULL,
+            visitReason TEXT,
+            visitDate TEXT,
+            visitTime TEXT,
+            acceptedRules INTEGER DEFAULT 0,
             acceptedDocuments TEXT,
-            createdAt TEXT NOT NULL
+            timestamp TEXT NOT NULL,
+            timezone TEXT NOT NULL,
+            pdfData TEXT
           );
           
           CREATE TABLE IF NOT EXISTS documents (
@@ -76,11 +77,13 @@ export const withDatabase = <T>(
         }
       } catch (dbError) {
         console.error('Fehler bei der Datenbankverbindung:', dbError);
-        throw dbError;
+        // Fallback zum Browser-Verhalten im Falle eines Datenbankfehlers
+        console.log("Fallback to browser implementation due to database error");
+        return browserFunction();
       }
     } catch (importError) {
       console.error('Fehler beim Importieren von better-sqlite3:', importError);
-      console.log('Fallback to browser implementation');
+      console.log('Fallback to browser implementation due to import error');
       // Fallback zum Browser-Verhalten im Falle eines Fehlers
       return browserFunction();
     }

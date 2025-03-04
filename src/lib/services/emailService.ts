@@ -13,7 +13,7 @@ interface EmailOptions {
   attachments?: Array<{
     filename: string;
     path?: string;
-    content?: Buffer;
+    content?: Buffer | string;
   }>;
 }
 
@@ -74,5 +74,77 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
       console.error('Fehler beim E-Mail-Versand:', error);
       return false;
     }
+  }
+};
+
+/**
+ * Sendet eine E-Mail mit PDF-Anhang
+ * @param subject Betreff der E-Mail
+ * @param pdfBase64 PDF als Base64-String
+ * @param filename Dateiname des PDF-Anhangs
+ * @param visitorName Name des Besuchers
+ * @param company Firma des Besuchers
+ * @param reason Besuchsgrund
+ * @returns Promise mit Ergebnis des E-Mail-Versands (true = erfolgreich, false = fehlgeschlagen)
+ */
+export const sendEmailWithPDF = async (
+  subject: string,
+  pdfBase64: string,
+  filename: string,
+  visitorName: string,
+  company: string,
+  reason: string
+): Promise<boolean> => {
+  try {
+    console.log(`Versuche E-Mail zu senden für Besucher: ${visitorName}`);
+    
+    // Empfänger-E-Mail aus Umgebungsvariablen oder Fallback
+    const recipientEmail = process.env.VITE_SMTP_TO || 'empfaenger@example.com';
+    
+    // HTML-Inhalt der E-Mail
+    const htmlContent = `
+      <h2>Neuer Besucher-Check-in</h2>
+      <p>Ein neuer Besucher hat sich angemeldet:</p>
+      <table border="0" cellpadding="5" style="border-collapse: collapse;">
+        <tr>
+          <td><strong>Name:</strong></td>
+          <td>${visitorName}</td>
+        </tr>
+        <tr>
+          <td><strong>Firma:</strong></td>
+          <td>${company}</td>
+        </tr>
+        <tr>
+          <td><strong>Grund:</strong></td>
+          <td>${reason}</td>
+        </tr>
+        <tr>
+          <td><strong>Zeitpunkt:</strong></td>
+          <td>${new Date().toLocaleString('de-DE')}</td>
+        </tr>
+      </table>
+      <p>Weitere Details finden Sie im angehängten PDF-Dokument.</p>
+    `;
+    
+    // PDF-Daten für den Anhang vorbereiten
+    const contentBuffer = typeof Buffer !== 'undefined' 
+      ? Buffer.from(pdfBase64.replace(/^data:application\/pdf;base64,/, ''), 'base64')
+      : pdfBase64;
+    
+    // E-Mail mit Anhang senden
+    return await sendEmail({
+      to: recipientEmail,
+      subject: subject,
+      html: htmlContent,
+      attachments: [
+        {
+          filename: filename,
+          content: contentBuffer
+        }
+      ]
+    });
+  } catch (error) {
+    console.error('Fehler beim Erstellen/Senden der E-Mail mit PDF-Anhang:', error);
+    return false;
   }
 };
