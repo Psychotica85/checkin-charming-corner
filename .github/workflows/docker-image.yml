@@ -35,7 +35,7 @@ jobs:
         context: .
         # Nur pushen, wenn es kein Pull Request ist
         push: ${{ github.event_name != 'pull_request' }}
-        tags: ghcr.io/${{ github.repository_owner }}/checkin-system:latest
+        tags: ghcr.io/psychotica85/checkin-charming-corner:latest
         platforms: linux/amd64,linux/arm64
-        cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/checkin-system:buildcache
-        cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/checkin-system:buildcache,mode=max
+        cache-from: type=registry,ref=ghcr.io/psychotica85/checkin-charming-corner:buildcache
+        cache-to: type=registry,ref=ghcr.io/psychotica85/checkin-charming-corner:buildcache,mode=max

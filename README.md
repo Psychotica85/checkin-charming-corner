@@ -32,8 +32,8 @@ Ein modernes System zur Verwaltung von Besucher Check-Ins mit PDF-Dokumentenverw
 
 1. Repository klonen:
    ```
-   git clone https://github.com/username/besuchercheck-in.git
-   cd besuchercheck-in
+   git clone https://github.com/psychotica85/checkin-charming-corner.git
+   cd checkin-charming-corner
    ```
 
 2. Umgebungsvariablen in der `docker-compose.yml`-Datei anpassen (optional):
@@ -108,7 +108,7 @@ Das Projekt enthält einen GitHub-Workflow für automatisierte Docker-Builds. Di
 
 Das Docker-Image kann dann mit folgendem Befehl verwendet werden:
 ```
-docker pull ghcr.io/IHR_GITHUB_BENUTZERNAME/checkin-system:latest
+docker pull ghcr.io/psychotica85/checkin-charming-corner:latest
 ```
 
 ## Lizenz
