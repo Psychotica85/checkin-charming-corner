@@ -17,10 +17,13 @@ interface EmailOptions {
   }>;
 }
 
+// Flag für Browser-Umgebung
+const isBrowser = typeof window !== 'undefined';
+
 // Funktion zum Senden von E-Mails, die in beiden Umgebungen funktioniert
 export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
   // Überprüfen, ob wir uns im Browser befinden
-  if (typeof window !== 'undefined' && window.IS_BROWSER) {
+  if (isBrowser) {
     console.log('Browser-Umgebung erkannt: E-Mail-Versand wird simuliert');
     console.log('E-Mail würde gesendet werden an:', options.to);
     console.log('Betreff:', options.subject);
@@ -99,7 +102,9 @@ export const sendEmailWithPDF = async (
     console.log(`Versuche E-Mail zu senden für Besucher: ${visitorName}`);
     
     // Empfänger-E-Mail aus Umgebungsvariablen oder Fallback
-    const recipientEmail = process.env.VITE_SMTP_TO || 'empfaenger@example.com';
+    const recipientEmail = isBrowser 
+      ? 'empfaenger@example.com' 
+      : (process.env.VITE_SMTP_TO || 'empfaenger@example.com');
     
     // HTML-Inhalt der E-Mail
     const htmlContent = `

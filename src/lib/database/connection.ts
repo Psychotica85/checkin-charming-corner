@@ -4,6 +4,19 @@ import type { Database } from 'better-sqlite3';
 export type DatabaseCallback<T> = (db: Database) => T;
 export type BrowserCallback<T> = () => T;
 
+// Globale Variable zur Erkennung der Browser-Umgebung
+declare global {
+  interface Window {
+    IS_BROWSER: boolean;
+  }
+}
+
+// Setze IS_BROWSER auf true im Browser-Kontext
+if (typeof window !== 'undefined') {
+  window.IS_BROWSER = true;
+  console.log("Browser-Umgebung erkannt, verwende localStorage statt SQLite");
+}
+
 // Wrapper-Funktion, die entweder die Server- oder Browser-Version verwendet
 export const withDatabase = <T>(
   serverFunction: DatabaseCallback<T>,

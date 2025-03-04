@@ -1,41 +1,44 @@
 
-import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
-import './index.css';
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
 
-console.log("🚀 Application starting...");
-
-// Define IS_BROWSER property on window
-declare global {
-  interface Window {
-    IS_BROWSER?: boolean;
-  }
-}
-
-// Flag setzen, dass wir uns in einer Browser-Umgebung befinden
+// Setze globales Flag für Browser-Umgebung
 window.IS_BROWSER = true;
-console.log("✅ Browser environment flag set");
 
-// Für Entwicklungszwecke: Lokalen Speicher vorbereiten, wenn er noch nicht existiert
-try {
-  if (!localStorage.getItem('documents')) {
-    localStorage.setItem('documents', JSON.stringify([]));
-    console.log("✅ Documents localStorage initialized");
-  }
-
+// Initialisierung des lokalen Speichers für die Browser-Umgebung
+const initializeLocalStorage = () => {
+  // Check-ins initialisieren
   if (!localStorage.getItem('checkIns')) {
     localStorage.setItem('checkIns', JSON.stringify([]));
-    console.log("✅ CheckIns localStorage initialized");
   }
-} catch (error) {
-  console.error("❌ Error initializing localStorage:", error);
-}
+  
+  // Dokumente initialisieren
+  if (!localStorage.getItem('pdfDocuments')) {
+    localStorage.setItem('pdfDocuments', JSON.stringify([]));
+  }
+  
+  // Unternehmenseinstellungen initialisieren
+  if (!localStorage.getItem('companySettings')) {
+    localStorage.setItem('companySettings', JSON.stringify({
+      id: '1',
+      companyName: 'Beispielfirma GmbH',
+      address: 'Musterstraße 123, 12345 Berlin',
+      contactEmail: 'info@beispielfirma.de',
+      contactPhone: '+49 123 4567890',
+      updatedAt: new Date().toISOString()
+    }));
+  }
+  
+  console.log('LocalStorage wurde initialisiert');
+};
 
-// Immediate render to avoid white page
-const container = document.getElementById('root');
-if (container) {
-  console.log("✅ Root element found, rendering application");
-  createRoot(container).render(<App />);
-} else {
-  console.error("❌ Root element not found!");
-}
+// Browser-Umgebung initialisieren
+initializeLocalStorage();
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)

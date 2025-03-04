@@ -34,6 +34,11 @@ app.use((req, res, next) => {
 // Statische Dateien aus dem dist-Verzeichnis bereitstellen
 app.use(express.static(path.join(__dirname, 'dist')));
 
+// Health-Check-Route
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'online', timestamp: new Date().toISOString() });
+});
+
 // API-Routen hier definieren, falls benötigt
 
 // Alle Anfragen, die nicht auf statische Dateien zugreifen, an index.html weiterleiten (für SPA)

@@ -8,7 +8,7 @@ import {
 import {
   getCompanySettings as companyServiceGetCompanySettings,
   updateCompanySettings as companyServiceUpdateCompanySettings,
-} from "@/lib/services/companyService";
+} from "@/lib/services/companySettingsService";
 
 import {
   saveDocument as documentServiceSaveDocument,
@@ -19,12 +19,13 @@ import {
 import * as userService from "@/lib/services/userService";
 
 // SMTP Konfiguration für E-Mail-Versand
-export const SMTP_HOST = process.env.SMTP_HOST || "smtp.example.com";
-export const SMTP_PORT = parseInt(process.env.SMTP_PORT || "587", 10);
-export const SMTP_USER = process.env.SMTP_USER || "user@example.com";
-export const SMTP_PASS = process.env.SMTP_PASS || "password";
-export const SMTP_FROM = process.env.SMTP_FROM || "noreply@example.com";
-export const SMTP_TO = process.env.SMTP_TO || "admin@example.com";
+// Verwende import.meta.env für Vite statt process.env
+export const SMTP_HOST = import.meta.env.VITE_SMTP_HOST || "smtp.example.com";
+export const SMTP_PORT = parseInt(import.meta.env.VITE_SMTP_PORT || "587", 10);
+export const SMTP_USER = import.meta.env.VITE_SMTP_USER || "user@example.com";
+export const SMTP_PASS = import.meta.env.VITE_SMTP_PASS || "password";
+export const SMTP_FROM = import.meta.env.VITE_SMTP_FROM || "noreply@example.com";
+export const SMTP_TO = import.meta.env.VITE_SMTP_TO || "admin@example.com";
 
 // Check-ins
 export const getCheckIns = async () => {

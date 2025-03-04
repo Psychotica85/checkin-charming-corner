@@ -9,6 +9,13 @@ import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
+// Globale Variable für Browser-Erkennung
+declare global {
+  interface Window {
+    IS_BROWSER: boolean;
+  }
+}
+
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
