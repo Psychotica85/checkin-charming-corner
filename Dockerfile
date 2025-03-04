@@ -32,6 +32,7 @@ ENV VITE_SMTP_USER=
 ENV VITE_SMTP_PASS=
 ENV VITE_SMTP_FROM=
 ENV VITE_SMTP_TO=
+ENV VITE_SMTP_SUBJECT=Neuer Besucher Check-In
 
 # Standard-Anmeldedaten für Admin-Bereich
 ENV VITE_ADMIN_USERNAME=admin
