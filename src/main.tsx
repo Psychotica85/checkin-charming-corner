@@ -39,11 +39,9 @@ const initializeLocalStorage = () => {
 // Browser-Umgebung initialisieren
 initializeLocalStorage();
 
-// Vermeidet Probleme mit Server-seitigen Modulen im Browser
-if (typeof window !== 'undefined') {
-  ReactDOM.createRoot(document.getElementById('root')!).render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>,
-  );
-}
+// React-App rendern
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+);

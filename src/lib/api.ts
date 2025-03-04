@@ -38,6 +38,11 @@ const DEFAULT_COMPANY_SETTINGS = {
 // Check-ins
 export const getCheckIns = async () => {
   try {
+    // Prüfen, ob wir im Browser-Kontext sind
+    if (typeof window !== 'undefined') {
+      const localCheckIns = localStorage.getItem('checkIns');
+      return localCheckIns ? JSON.parse(localCheckIns) : [];
+    }
     return await checkInServiceGetCheckIns();
   } catch (error) {
     console.error("API error - getCheckIns:", error);
@@ -47,6 +52,19 @@ export const getCheckIns = async () => {
 
 export const submitCheckIn = async (checkInData: any) => {
   try {
+    // Prüfen, ob wir im Browser-Kontext sind
+    if (typeof window !== 'undefined') {
+      const localCheckIns = localStorage.getItem('checkIns');
+      const checkIns = localCheckIns ? JSON.parse(localCheckIns) : [];
+      const newCheckIn = {
+        ...checkInData,
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString()
+      };
+      checkIns.push(newCheckIn);
+      localStorage.setItem('checkIns', JSON.stringify(checkIns));
+      return { success: true, message: "Check-in erfolgreich erstellt" };
+    }
     return await checkInServiceSubmitCheckIn(checkInData);
   } catch (error) {
     console.error("API error - submitCheckIn:", error);
@@ -56,6 +74,16 @@ export const submitCheckIn = async (checkInData: any) => {
 
 export const updateCheckIn = async (id: string, checkInData: any) => {
   try {
+    // Prüfen, ob wir im Browser-Kontext sind
+    if (typeof window !== 'undefined') {
+      const localCheckIns = localStorage.getItem('checkIns');
+      const checkIns = localCheckIns ? JSON.parse(localCheckIns) : [];
+      const updatedCheckIns = checkIns.map((checkIn: any) => 
+        checkIn.id === id ? { ...checkIn, ...checkInData } : checkIn
+      );
+      localStorage.setItem('checkIns', JSON.stringify(updatedCheckIns));
+      return { success: true, message: "Check-in erfolgreich aktualisiert" };
+    }
     // Implementierung für updateCheckIn
     console.log(`Updating check-in ${id}:`, checkInData);
     return { success: true, message: "Check-in erfolgreich aktualisiert" };
@@ -67,6 +95,14 @@ export const updateCheckIn = async (id: string, checkInData: any) => {
 
 export const deleteCheckIn = async (id: string) => {
   try {
+    // Prüfen, ob wir im Browser-Kontext sind
+    if (typeof window !== 'undefined') {
+      const localCheckIns = localStorage.getItem('checkIns');
+      const checkIns = localCheckIns ? JSON.parse(localCheckIns) : [];
+      const filteredCheckIns = checkIns.filter((checkIn: any) => checkIn.id !== id);
+      localStorage.setItem('checkIns', JSON.stringify(filteredCheckIns));
+      return { success: true, message: "Check-in erfolgreich gelöscht" };
+    }
     return await checkInServiceDeleteCheckIn(id);
   } catch (error) {
     console.error("API error - deleteCheckIn:", error);
@@ -78,7 +114,7 @@ export const generatePdfReport = async (checkInId: string) => {
   try {
     console.log("Generating PDF report for check-in ID:", checkInId);
     const checkIns = await getCheckIns();
-    const checkIn = checkIns.find(item => item.id === checkInId);
+    const checkIn = checkIns.find((item: any) => item.id === checkInId);
     
     if (!checkIn) {
       console.error("Check-in not found:", checkInId);
@@ -147,17 +183,16 @@ export const generatePdfReport = async (checkInId: string) => {
 export const getCompanySettings = async () => {
   try {
     // Prüfen, ob wir im Browser-Kontext sind
-    const isBrowser = typeof window !== 'undefined';
-    
-    if (isBrowser) {
-      console.log("Browser-Kontext erkannt, verwende lokalen Fallback für Unternehmenseinstellungen");
+    if (typeof window !== 'undefined') {
+      console.log("Browser-Kontext erkannt, verwende lokale Einstellungen");
       const localSettings = localStorage.getItem('companySettings');
       if (localSettings) {
         return JSON.parse(localSettings);
       }
-      // Immer Standardwerte zurückgeben, wenn keine Einstellungen gefunden wurden
-      console.log("Verwende Standardwerte für Unternehmenseinstellungen");
-      return DEFAULT_COMPANY_SETTINGS;
+      // Standardwerte setzen, wenn keine Einstellungen vorhanden sind
+      const defaultSettings = DEFAULT_COMPANY_SETTINGS;
+      localStorage.setItem('companySettings', JSON.stringify(defaultSettings));
+      return defaultSettings;
     }
     
     // Server-Kontext: Normale Datenbankabfrage
@@ -176,6 +211,20 @@ export const getCompanySettings = async () => {
 
 export const updateCompanySettings = async (settingsData: any) => {
   try {
+    // Prüfen, ob wir im Browser-Kontext sind
+    if (typeof window !== 'undefined') {
+      console.log("Browser-Kontext erkannt, aktualisiere lokale Einstellungen");
+      const localSettings = localStorage.getItem('companySettings');
+      const currentSettings = localSettings ? JSON.parse(localSettings) : DEFAULT_COMPANY_SETTINGS;
+      const updatedSettings = {
+        ...currentSettings,
+        ...settingsData,
+        updatedAt: new Date().toISOString()
+      };
+      localStorage.setItem('companySettings', JSON.stringify(updatedSettings));
+      return { success: true, message: "Unternehmenseinstellungen erfolgreich aktualisiert" };
+    }
+    
     return await companyServiceUpdateCompanySettings(settingsData);
   } catch (error) {
     console.error("API error - updateCompanySettings:", error);
@@ -186,6 +235,20 @@ export const updateCompanySettings = async (settingsData: any) => {
 // PDF Documents
 export const saveDocument = async (pdfData: any) => {
   try {
+    // Prüfen, ob wir im Browser-Kontext sind
+    if (typeof window !== 'undefined') {
+      const localDocuments = localStorage.getItem('pdfDocuments');
+      const documents = localDocuments ? JSON.parse(localDocuments) : [];
+      const newDocument = {
+        ...pdfData,
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString()
+      };
+      documents.push(newDocument);
+      localStorage.setItem('pdfDocuments', JSON.stringify(documents));
+      return { success: true, message: "Dokument erfolgreich gespeichert", documentId: newDocument.id };
+    }
+    
     return await documentServiceSaveDocument(pdfData);
   } catch (error) {
     console.error("API error - saveDocument:", error);
@@ -195,6 +258,12 @@ export const saveDocument = async (pdfData: any) => {
 
 export const getDocuments = async () => {
   try {
+    // Prüfen, ob wir im Browser-Kontext sind
+    if (typeof window !== 'undefined') {
+      const localDocuments = localStorage.getItem('pdfDocuments');
+      return localDocuments ? JSON.parse(localDocuments) : [];
+    }
+    
     return await documentServiceGetDocuments();
   } catch (error) {
     console.error("API error - getDocuments:", error);
@@ -204,6 +273,15 @@ export const getDocuments = async () => {
 
 export const deleteDocument = async (id: string) => {
   try {
+    // Prüfen, ob wir im Browser-Kontext sind
+    if (typeof window !== 'undefined') {
+      const localDocuments = localStorage.getItem('pdfDocuments');
+      const documents = localDocuments ? JSON.parse(localDocuments) : [];
+      const filteredDocuments = documents.filter((doc: any) => doc.id !== id);
+      localStorage.setItem('pdfDocuments', JSON.stringify(filteredDocuments));
+      return { success: true, message: "Dokument erfolgreich gelöscht" };
+    }
+    
     return await documentServiceDeleteDocument(id);
   } catch (error) {
     console.error("API error - deleteDocument:", error);
@@ -214,6 +292,16 @@ export const deleteDocument = async (id: string) => {
 // Admin Authentifizierung
 export const authenticateUser = async (username: string, password: string) => {
   try {
+    // Im Browser-Kontext einfache Demo-Authentifizierung
+    if (typeof window !== 'undefined') {
+      // Demo-Authentifizierung für Entwicklungszwecke
+      if (username === 'admin' && password === 'password') {
+        localStorage.setItem('authUser', JSON.stringify({ username, role: 'admin' }));
+        return { success: true, message: 'Erfolgreich angemeldet', user: { username, role: 'admin' } };
+      }
+      return { success: false, message: 'Ungültige Anmeldedaten' };
+    }
+    
     return await userService.authenticateUser(username, password);
   } catch (error) {
     console.error('API error - authenticateUser:', error);

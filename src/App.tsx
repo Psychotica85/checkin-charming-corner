@@ -23,24 +23,15 @@ const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
-      // Fehler besser behandeln
-      onError: (error) => {
-        console.error("Query error:", error);
-      }
     },
   },
 });
 
 const App = () => {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // Direkt mit false initialisieren
   
   useEffect(() => {
     console.log("App component mounted");
-    // Kürzere Initialisierungsverzögerung
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      console.log("App ready to render routes");
-    }, 500);
     
     // Lokalen Speicher initialisieren, wenn er noch nicht existiert
     if (typeof window !== 'undefined' && !localStorage.getItem('companySettings')) {
@@ -52,22 +43,9 @@ const App = () => {
       }));
       console.log("Lokale Unternehmenseinstellungen initialisiert");
     }
-    
-    return () => clearTimeout(timer);
   }, []);
   
   console.log("App rendering, isLoading:", isLoading);
-  
-  // Simple loading screen with shorter timeout
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
-        <div className="w-16 h-16 border-4 border-primary border-solid rounded-full border-t-transparent animate-spin mb-4"></div>
-        <h1 className="text-2xl font-bold text-primary mb-2">Gäste Check-In System</h1>
-        <p className="text-muted-foreground">Anwendung wird initialisiert...</p>
-      </div>
-    );
-  }
   
   return (
     <QueryClientProvider client={queryClient}>

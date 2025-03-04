@@ -8,7 +8,6 @@ import { getCompanySettings } from "@/lib/api";
 
 const Index = () => {
   const [companyName, setCompanyName] = useState<string>("Ihr Unternehmen");
-  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     console.log("Index page mounted"); // Debug log
@@ -16,7 +15,6 @@ const Index = () => {
     // Lade die Unternehmensdaten für den Footer
     const loadCompanyData = async () => {
       try {
-        setLoading(true);
         const settings = await getCompanySettings();
         if (settings && settings.address) {
           // Extrahiere die erste Zeile der Adresse als Unternehmensnamen
@@ -25,28 +23,11 @@ const Index = () => {
         }
       } catch (error) {
         console.error("Failed to load company data:", error);
-      } finally {
-        setLoading(false);
       }
     };
     
     loadCompanyData();
   }, []);
-
-  // Einfacher Ladeindikator, der nur kurz angezeigt wird
-  if (loading) {
-    // Zeige den Ladeindikator nur für maximal 2 Sekunden an
-    setTimeout(() => setLoading(false), 2000);
-    
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 border-4 border-primary border-solid rounded-full border-t-transparent animate-spin"></div>
-          <h1 className="text-2xl font-bold">Besuchersystem wird geladen...</h1>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen w-full flex flex-col bg-background">
