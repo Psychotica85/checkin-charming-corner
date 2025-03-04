@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -82,8 +83,7 @@ const Admin = () => {
       const newUser = {
         username: newUsername,
         password: newPassword,
-        role: "user",
-        createdAt: new Date().toISOString(),
+        role: "user" as "admin" | "user", // Fix: Explicitly cast to the correct type
       };
       const success = await createUser(newUser);
       if (success) {
@@ -105,13 +105,11 @@ const Admin = () => {
     if (!editUserId) return;
     try {
       const updatedUser = {
-        id: editUserId,
         username: editUsername,
         password: editPassword,
-        role: "user",
-        createdAt: new Date().toISOString(),
+        role: "user" as "admin" | "user", // Fix: Explicitly cast to the correct type
       };
-      const success = await updateUser(updatedUser);
+      const success = await updateUser(editUserId, updatedUser); // Fix: Pass id and userData separately
       if (success) {
         fetchUsers();
         setEditUserId(null);
