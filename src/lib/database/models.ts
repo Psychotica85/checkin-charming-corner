@@ -18,6 +18,10 @@ export interface Document {
   createdAt: string;
 }
 
+export interface IDocument extends Document {
+  // Erweitert Document für bessere Kompatibilität mit DocumentService
+}
+
 export type CheckInData = {
   firstName: string;
   lastName: string;

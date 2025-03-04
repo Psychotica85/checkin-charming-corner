@@ -160,7 +160,7 @@ export const getCheckIns = async (): Promise<any[]> => {
       
       // Fallback: Aus MongoDB abrufen
       const CheckInModel = getCheckInModel();
-      const checkIns = await CheckInModel.find().sort({ timestamp: -1 });
+      const checkIns = await CheckInModel.find().sort({ timestamp: -1 }).exec();
       
       // Zu Frontend-Format konvertieren
       return checkIns.map(checkIn => {

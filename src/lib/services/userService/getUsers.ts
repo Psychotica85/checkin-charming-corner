@@ -52,7 +52,7 @@ export const getUsers = async (): Promise<User[]> => {
         
         // Fallback: Mit MongoDB versuchen
         const UserModel = getUserModel();
-        const count = await UserModel.countDocuments();
+        const count = await UserModel.countDocuments().exec();
         
         // Wenn keine Benutzer existieren, Standard-Admin-Benutzer erstellen
         if (count === 0) {
@@ -74,7 +74,7 @@ export const getUsers = async (): Promise<User[]> => {
         }
         
         // Sonst alle Benutzer zurückgeben
-        const users = await UserModel.find();
+        const users = await UserModel.find().exec();
         
         return users.map(user => ({
           id: user._id.toString(),

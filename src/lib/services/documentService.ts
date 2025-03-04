@@ -1,9 +1,9 @@
 
-import { Document, IDocument } from '../database/models';
+import { Document } from '../database/models';
 import { prisma } from '../database/prisma';
 import { connectToDatabase } from '../database/connection';
 
-export const getDocuments = async (): Promise<IDocument[]> => {
+export const getDocuments = async (): Promise<Document[]> => {
   try {
     await connectToDatabase();
     const docs = await prisma.document.findMany();
@@ -22,7 +22,7 @@ export const getDocuments = async (): Promise<IDocument[]> => {
   }
 };
 
-export const saveDocument = async (document: Omit<IDocument, 'id'> & { id?: string }): Promise<boolean> => {
+export const saveDocument = async (document: Omit<Document, 'id'> & { id?: string }): Promise<boolean> => {
   try {
     await connectToDatabase();
     const createdAt = document.createdAt || new Date();

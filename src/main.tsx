@@ -5,6 +5,13 @@ import './index.css'
 
 // Die MongoDB-Verbindung wird in einer Browser-Umgebung nicht hergestellt
 // Wir können ein Flag setzen, dass wir uns in einer Browser-Umgebung befinden
+// Typensicherer Ansatz für das Window-Objekt
+declare global {
+  interface Window {
+    IS_BROWSER: boolean;
+  }
+}
+
 window.IS_BROWSER = true;
 
 // Für Entwicklungszwecke: Lokalen Speicher vorbereiten, wenn er noch nicht existiert

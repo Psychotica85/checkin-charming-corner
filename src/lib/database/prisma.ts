@@ -12,7 +12,7 @@ const isBrowser = typeof window !== 'undefined';
 
 // Fallback für Browser-Umgebung
 class PrismaClientFallback {
-  // Implementiere Methoden, die im Browser verwendet werden könnten
+  // Prisma-Methoden simulieren
   async $connect() {
     console.log('Browser-Umgebung: Prisma-Verbindung simuliert.');
     return Promise.resolve();
@@ -22,6 +22,39 @@ class PrismaClientFallback {
     console.log('Browser-Umgebung: Prisma-Verbindung getrennt.');
     return Promise.resolve();
   }
+
+  // Simuliere count
+  async count() {
+    console.log('Browser-Umgebung: count simuliert');
+    return 0;
+  }
+
+  // Simuliere user-spezifische Methoden
+  user = {
+    count: () => Promise.resolve(0),
+    findMany: () => Promise.resolve([]),
+    findUnique: () => Promise.resolve(null),
+    findFirst: () => Promise.resolve(null),
+    create: () => Promise.resolve({}),
+    update: () => Promise.resolve({}),
+    delete: () => Promise.resolve({})
+  };
+
+  // Simuliere document-spezifische Methoden
+  document = {
+    findMany: () => Promise.resolve([]),
+    create: () => Promise.resolve({}),
+    update: () => Promise.resolve({}),
+    delete: () => Promise.resolve({})
+  };
+
+  // Simuliere checkIn-spezifische Methoden
+  checkIn = {
+    findMany: () => Promise.resolve([]),
+    create: () => Promise.resolve({}),
+    update: () => Promise.resolve({}),
+    delete: () => Promise.resolve({})
+  };
 }
 
 // PrismaClient für Node.js oder Fallback für Browser
