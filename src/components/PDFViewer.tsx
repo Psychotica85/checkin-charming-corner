@@ -13,6 +13,8 @@ interface PDFViewerProps {
 
 const PDFViewer = ({ document, url, onAccept, isAccepted }: PDFViewerProps) => {
   const [showPDF, setShowPDF] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const handleAccept = () => {
     if (onAccept && document) {
@@ -60,10 +62,20 @@ const PDFViewer = ({ document, url, onAccept, isAccepted }: PDFViewerProps) => {
     }
   };
 
-  // Bestimme die anzuzeigende URL (entweder direkt übergeben oder aus document)
+  // Handle iframe load events
+  const handleIframeLoad = () => {
+    setIsLoading(false);
+  };
+
+  const handleIframeError = () => {
+    setIsLoading(false);
+    setError("Fehler beim Laden des PDF-Dokuments");
+  };
+
+  // Determine URL to display (either passed directly or from document)
   const pdfUrl = url || (document ? getPdfUrl(document.file) : '');
 
-  // Wenn weder url noch document vorhanden ist, nichts anzeigen
+  // If neither url nor document is available, show nothing
   if (!pdfUrl) {
     return <div>Keine PDF-Daten verfügbar</div>;
   }
@@ -92,10 +104,24 @@ const PDFViewer = ({ document, url, onAccept, isAccepted }: PDFViewerProps) => {
       {/* PDF viewer */}
       {(showPDF || !document) && (
         <div className="w-full">
+          {isLoading && (
+            <div className="flex items-center justify-center h-40">
+              <p>Lade PDF-Dokument...</p>
+            </div>
+          )}
+          
+          {error && (
+            <div className="flex items-center justify-center h-40 text-red-500">
+              <p>{error}</p>
+            </div>
+          )}
+          
           <iframe 
             src={pdfUrl} 
             className="w-full h-[90vh]" 
             title={document?.name || "PDF Dokument"}
+            onLoad={handleIframeLoad}
+            onError={handleIframeError}
           />
         </div>
       )}

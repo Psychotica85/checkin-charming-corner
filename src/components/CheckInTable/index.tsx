@@ -59,12 +59,15 @@ const CheckInTable = () => {
 
   const handleGeneratePDF = async (id: string) => {
     try {
+      setPdfUrl(null); // Reset pdfUrl to show loading indicator
       const result = await generatePdfReport(id);
-      if (result.success) {
+      if (result.success && result.pdfUrl) {
+        console.log("PDF URL received:", result.pdfUrl);
         setPdfUrl(result.pdfUrl);
         toast.success("PDF-Bericht wurde erstellt");
       } else {
-        toast.error(result.message);
+        console.error("Error generating PDF:", result.message);
+        toast.error(result.message || "Fehler beim Erstellen des PDF-Berichts");
       }
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -73,15 +76,24 @@ const CheckInTable = () => {
   };
 
   const handleViewPDF = (checkIn: CheckIn) => {
+    console.log("Viewing PDF for check-in:", checkIn);
     setSelectedCheckIn(checkIn);
     setDialogOpen(true);
-    handleGeneratePDF(checkIn.id as string);
+    
+    // Use timeout to ensure dialog is open before loading PDF
+    setTimeout(() => {
+      if (checkIn.id) {
+        handleGeneratePDF(checkIn.id as string);
+      }
+    }, 100);
   };
 
   const handleDialogClose = () => {
     setDialogOpen(false);
-    setSelectedCheckIn(null);
-    setPdfUrl(null);
+    setTimeout(() => {
+      setSelectedCheckIn(null);
+      setPdfUrl(null);
+    }, 300); // Delay clearing data until after animation completes
   };
 
   const filteredCheckIns = filterCheckIns(
@@ -140,12 +152,10 @@ const CheckInTable = () => {
           setDialogOpen(open);
         }}
       >
-        {selectedCheckIn && (
-          <CheckInPDFDialog 
-            checkIn={selectedCheckIn} 
-            pdfUrl={pdfUrl} 
-          />
-        )}
+        <CheckInPDFDialog 
+          checkIn={selectedCheckIn} 
+          pdfUrl={pdfUrl} 
+        />
       </Dialog>
     </div>
   );

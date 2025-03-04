@@ -1,4 +1,3 @@
-
 import {
   getCheckIns as checkInServiceGetCheckIns,
   deleteCheckIn as checkInServiceDeleteCheckIn,
@@ -67,32 +66,70 @@ export const deleteCheckIn = async (id: string) => {
 
 export const generatePdfReport = async (checkInId: string) => {
   try {
+    console.log("Generating PDF report for check-in ID:", checkInId);
     const checkIns = await getCheckIns();
     const checkIn = checkIns.find(item => item.id === checkInId);
     
     if (!checkIn) {
+      console.error("Check-in not found:", checkInId);
       return { 
         success: false, 
         message: "Check-in konnte nicht gefunden werden"
       };
     }
     
-    // Prüfen, ob die reportUrl existiert oder einen Fallback verwenden
-    let pdfUrl = checkIn.reportUrl;
-    if (!pdfUrl) {
-      // Fallback: Wenn keine reportUrl existiert, erstellen wir eine Dummy-URL
-      // In einer realen Anwendung würde hier das PDF generiert werden
-      pdfUrl = `/reports/${checkInId}.pdf`;
+    // Log the found check-in to see what data we have
+    console.log("Found check-in:", checkIn);
+    
+    // Check if the check-in has reportUrl or pdfData
+    if (checkIn.reportUrl) {
+      console.log("Using existing reportUrl:", checkIn.reportUrl);
+      return { 
+        success: true, 
+        message: "PDF-Bericht verfügbar",
+        pdfUrl: checkIn.reportUrl
+      };
+    } else if (checkIn.pdfData) {
+      // If we have pdfData, create a blob URL
+      try {
+        console.log("Creating blob URL from pdfData");
+        const pdfDataURL = checkIn.pdfData;
+        const byteString = atob(pdfDataURL.split(',')[1]);
+        const mimeString = pdfDataURL.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: mimeString });
+        const pdfUrl = URL.createObjectURL(blob);
+        console.log("Created blob URL:", pdfUrl);
+        
+        return { 
+          success: true, 
+          message: "PDF-Bericht wurde generiert",
+          pdfUrl: pdfUrl
+        };
+      } catch (error) {
+        console.error("Error creating blob URL from pdfData:", error);
+      }
     }
+    
+    // Fallback: use a placeholder URL
+    const fallbackUrl = `/reports/${checkInId}.pdf`;
+    console.log("Using fallback URL:", fallbackUrl);
     
     return { 
       success: true, 
-      message: "PDF-Bericht erfolgreich generiert",
-      pdfUrl: pdfUrl
+      message: "PDF-Bericht wurde generiert (Platzhalter)",
+      pdfUrl: fallbackUrl
     };
   } catch (error) {
     console.error("API error - generatePdfReport:", error);
-    return { success: false, message: "Failed to generate PDF report" };
+    return { 
+      success: false, 
+      message: "Fehler beim Generieren des PDF-Berichts"
+    };
   }
 };
 
