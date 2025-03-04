@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { submitCheckIn } from "@/lib/api";
@@ -59,7 +60,11 @@ const CheckInForm = () => {
         // Try to load from localStorage as fallback
         const storedDocs = localStorage.getItem("pdfDocuments");
         if (storedDocs) {
-          setDocuments(JSON.parse(storedDocs));
+          try {
+            setDocuments(JSON.parse(storedDocs));
+          } catch (e) {
+            console.error("Error parsing documents from localStorage:", e);
+          }
         }
       }
     };
@@ -130,13 +135,13 @@ const CheckInForm = () => {
       if (result.success) {
         setCompleted(true);
         setReportUrl(result.reportUrl || null);
-        toast.success(result.message);
+        toast.success(result.message || "Check-in erfolgreich!");
       } else {
-        toast.error(result.message);
+        toast.error(result.message || "Fehler beim Check-in");
       }
     } catch (error) {
-      toast.error("Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.");
       console.error("Check-in error:", error);
+      toast.error("Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.");
     } finally {
       setLoading(false);
     }
@@ -168,7 +173,7 @@ const CheckInForm = () => {
   }
 
   return (
-    <div className="w-full px-6 py-8 glass rounded-2xl space-y-6 animate-fade-in">
+    <div className="w-full px-6 py-8 rounded-2xl space-y-6 animate-fade-in border border-border bg-background/50 backdrop-blur-sm">
       {/* Progress indicator */}
       <StepIndicator steps={formSteps} currentStep={currentStep} />
 

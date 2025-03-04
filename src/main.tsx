@@ -22,4 +22,10 @@ if (!localStorage.getItem('checkIns')) {
   localStorage.setItem('checkIns', JSON.stringify([]));
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Immediate render to avoid white page
+const container = document.getElementById('root');
+if (container) {
+  createRoot(container).render(<App />);
+} else {
+  console.error('Root element not found!');
+}

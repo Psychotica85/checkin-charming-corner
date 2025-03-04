@@ -10,7 +10,7 @@ const Index = () => {
       <Toaster position="top-center" />
       
       {/* Header */}
-      <header className="w-full py-6 px-4 sm:px-6 glass border-b border-border/50 sticky top-0 z-10">
+      <header className="w-full py-6 px-4 sm:px-6 border-b border-border/50 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Logo />
           <div className="flex items-center gap-4">
@@ -32,11 +32,11 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Main content - Increased max-width here */}
+      {/* Main content */}
       <main className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="max-w-6xl w-full mx-auto flex flex-col gap-24 items-center">
-          {/* Welcome section - above the form with full width and better spacing */}
-          <div className="space-y-8 animate-slide-down w-full pt-8">
+          {/* Welcome section */}
+          <div className="space-y-8 w-full pt-8">
             <div className="space-y-4 text-center">
               <div className="text-sm font-medium text-primary px-3 py-1 bg-primary/10 rounded-full w-fit mx-auto">
                 Willkommen
@@ -65,7 +65,7 @@ const Index = () => {
             </ul>
           </div>
           
-          {/* Check-in form - Increased max-width and added margin */}
+          {/* Check-in form */}
           <div className="w-full max-w-3xl">
             <CheckInForm />
           </div>
