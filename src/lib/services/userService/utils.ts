@@ -1,6 +1,6 @@
 
 // Browser-Erkennung
-export const isBrowser = typeof window !== 'undefined' && window.IS_BROWSER === true;
+export const isBrowser = typeof window !== 'undefined';
 
 // Rollenzuordnungs-Hilfsfunktionen
 export const mapDatabaseRoleToFrontendRole = (role: 'ADMIN' | 'USER'): 'admin' | 'user' => {
