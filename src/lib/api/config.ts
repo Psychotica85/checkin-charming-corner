@@ -1,6 +1,9 @@
 
 // API Konfigurationsmodul mit SMTP-Einstellungen
 
+// Browser Erkennung
+export const isBrowser = typeof window !== 'undefined';
+
 // SMTP Konfiguration für E-Mail-Versand
 export const SMTP_HOST = import.meta.env.VITE_SMTP_HOST || "smtp.example.com";
 export const SMTP_PORT = parseInt(import.meta.env.VITE_SMTP_PORT || "587", 10);
