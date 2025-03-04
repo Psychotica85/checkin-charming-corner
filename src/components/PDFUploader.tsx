@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -188,7 +189,7 @@ const PDFUploader = () => {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {documents.map((doc) => (
-              <Card key={doc.id || doc._id}>
+              <Card key={doc.id}>
                 <CardHeader>
                   <CardTitle className="text-base">{doc.name}</CardTitle>
                   <CardDescription className="text-sm line-clamp-2">
@@ -216,7 +217,7 @@ const PDFUploader = () => {
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => handleDelete(doc.id || doc._id || '')}
+                    onClick={() => handleDelete(doc.id)}
                     disabled={isDeleting}
                   >
                     Löschen
