@@ -1,3 +1,4 @@
+
 FROM node:18-alpine
 
 # Arbeitssverzeichnis setzen
@@ -45,4 +46,4 @@ ENV VITE_ADMIN_PASSWORD=admin
 EXPOSE 3000
 
 # Anwendung direkt starten ohne Shell-Skript
-CMD ["node", "server.js"]
+CMD ["/bin/sh", "-c", "node server.js"]
