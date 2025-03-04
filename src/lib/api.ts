@@ -2,6 +2,7 @@
 import {
   getCheckIns as checkInServiceGetCheckIns,
   deleteCheckIn as checkInServiceDeleteCheckIn,
+  submitCheckIn as checkInServiceSubmitCheckIn
 } from "@/lib/services/checkInService";
 
 import {
@@ -35,18 +36,12 @@ export const getCheckIns = async () => {
   }
 };
 
-export const createCheckIn = async (checkInData: any) => {
+export const submitCheckIn = async (checkInData: any) => {
   try {
-    // Implementierung für createCheckIn
-    console.log("Creating check-in:", checkInData);
-    return {
-      success: true,
-      message: "Check-in erfolgreich erstellt",
-      reportUrl: `/reports/${Date.now()}.pdf`
-    };
+    return await checkInServiceSubmitCheckIn(checkInData);
   } catch (error) {
-    console.error("API error - createCheckIn:", error);
-    return { success: false, message: "Failed to create check-in" };
+    console.error("API error - submitCheckIn:", error);
+    return { success: false, message: "Fehler beim Erstellen des Check-ins" };
   }
 };
 
@@ -72,12 +67,20 @@ export const deleteCheckIn = async (id: string) => {
 
 export const generatePdfReport = async (checkInId: string) => {
   try {
-    // Implementierung für generatePdfReport
-    console.log(`Generating PDF report for check-in ${checkInId}`);
+    const checkIns = await getCheckIns();
+    const checkIn = checkIns.find(item => item.id === checkInId);
+    
+    if (!checkIn || !checkIn.reportUrl) {
+      return { 
+        success: false, 
+        message: "PDF-Bericht konnte nicht gefunden werden"
+      };
+    }
+    
     return { 
       success: true, 
       message: "PDF-Bericht erfolgreich generiert",
-      pdfUrl: `/reports/${checkInId}.pdf`
+      pdfUrl: checkIn.reportUrl
     };
   } catch (error) {
     console.error("API error - generatePdfReport:", error);
@@ -139,21 +142,5 @@ export const authenticateUser = async (username: string, password: string) => {
   } catch (error) {
     console.error('API error - authenticateUser:', error);
     return { success: false, message: 'Authentifizierungsfehler' };
-  }
-};
-
-// Check-in Submission
-export const submitCheckIn = async (data: any) => {
-  try {
-    // Implementierung für submitCheckIn
-    console.log("Submitting check-in:", data);
-    return {
-      success: true,
-      message: "Check-in erfolgreich übermittelt",
-      reportUrl: `/reports/${Date.now()}.pdf`
-    };
-  } catch (error) {
-    console.error('API error - submitCheckIn:', error);
-    return { success: false, message: 'Fehler bei der Übermittlung' };
   }
 };

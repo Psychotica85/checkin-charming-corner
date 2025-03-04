@@ -36,7 +36,8 @@ export const filterCheckIns = (
     
     // Datum Filter
     const dateMatches = !dateFilter || 
-      (checkIn.visitDate && typeof checkIn.visitDate === 'string' && 
+      (checkIn.visitDate && 
+       typeof checkIn.visitDate === 'string' && 
        checkIn.visitDate.includes(dateFilter));
     
     // Zeit Filter

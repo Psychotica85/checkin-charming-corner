@@ -125,7 +125,7 @@ const CheckInTable = () => {
         </div>
       )}
 
-      <Dialog>
+      <Dialog open={selectedCheckIn !== null} onOpenChange={(open) => !open && setSelectedCheckIn(null)}>
         <CheckInPDFDialog 
           checkIn={selectedCheckIn} 
           pdfUrl={pdfUrl} 
