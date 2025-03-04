@@ -12,3 +12,6 @@ export const mapDatabaseRoleToFrontendRole = (role: 'ADMIN' | 'USER'): 'admin' |
 export const mapFrontendRoleToDatabaseRole = (role: 'admin' | 'user'): 'ADMIN' | 'USER' => {
   return role === 'admin' ? 'ADMIN' : 'USER';
 };
+
+// Re-export the withDatabase function from connection.ts
+export { withDatabase };

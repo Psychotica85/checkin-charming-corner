@@ -1,11 +1,10 @@
 
 import Database from 'better-sqlite3';
-import { join } from 'path';
 
-// SQLite-Datenbankpfad
-const DB_PATH = process.env.NODE_ENV === 'production' 
+// SQLite-Datenbankpfad - mit sicherer Umgebungsvariablenprüfung
+const DB_PATH = typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production' 
   ? '/app/data/checkin.db' 
-  : join(process.cwd(), 'data/checkin.db');
+  : './data/checkin.db';
 
 let db: Database.Database | null = null;
 
@@ -26,12 +25,14 @@ export const connectToDatabase = (): Database.Database => {
       console.log(`Verbinde zu SQLite-Datenbank: ${DB_PATH}`);
       
       // Stellt sicher, dass das Verzeichnis existiert
-      const fs = require('fs');
-      const path = require('path');
-      const dir = path.dirname(DB_PATH);
-      
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+      if (typeof require !== 'undefined') {
+        const fs = require('fs');
+        const path = require('path');
+        const dir = path.dirname(DB_PATH);
+        
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
       }
       
       db = new Database(DB_PATH);

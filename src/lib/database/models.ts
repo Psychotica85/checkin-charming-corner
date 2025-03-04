@@ -18,6 +18,7 @@ export interface Document {
   createdAt: string;
 }
 
+// PDFDocument ist identisch mit Document
 export type PDFDocument = Document;
 
 export type CheckInData = {
