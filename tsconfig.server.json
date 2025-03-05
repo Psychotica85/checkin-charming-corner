@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "outDir": "./dist/lib",
+    "allowImportingTsExtensions": false,
+    "isolatedModules": true,
+    "esModuleInterop": true
+  },
+  "include": ["src/lib/**/*.ts"],
+  "exclude": ["node_modules"]
+} 

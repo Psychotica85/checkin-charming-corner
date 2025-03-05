@@ -1,4 +1,3 @@
-
 FROM node:18-alpine AS builder
 
 # Arbeitssverzeichnis setzen
@@ -15,8 +14,10 @@ RUN npm install --verbose --no-audit
 # Projektdateien kopieren
 COPY . .
 
-# Anwendung bauen
+# Frontend-Anwendung bauen
 RUN npm run build
+# TypeScript-Dateien für den Server kompilieren
+RUN npx tsc --project tsconfig.server.json
 
 # Zweites Stage für die eigentliche Anwendung
 FROM node:18-alpine
@@ -33,7 +34,8 @@ WORKDIR /app
 # Nur die notwendigen Dateien aus dem Builder kopieren
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/src/server ./src/server
-COPY --from=builder /app/src/lib ./src/lib
+# Kopiere die kompilierten JS-Dateien statt der TS-Dateien
+COPY --from=builder /app/dist/lib ./src/lib
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/start.sh ./start.sh
 COPY --from=builder /app/server.js ./server.js
