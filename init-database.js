@@ -59,6 +59,7 @@ async function initializeDatabase() {
         id VARCHAR(36) PRIMARY KEY,
         firstName VARCHAR(100) NOT NULL,
         lastName VARCHAR(100) NOT NULL,
+        fullName VARCHAR(200) AS (CONCAT(firstName, ' ', lastName)) VIRTUAL,
         company VARCHAR(100) NOT NULL,
         visitReason TEXT NOT NULL,
         visitDate DATE NOT NULL,
