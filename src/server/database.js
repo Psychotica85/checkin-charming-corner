@@ -1,4 +1,3 @@
-
 import mysql from 'mysql2/promise';
 
 // Konfiguration für die MySQL-Datenbankverbindung
@@ -10,7 +9,8 @@ const dbConfig = {
   database: process.env.DB_NAME || 'checkin_db',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  ssl: false  // SSL explizit deaktivieren
 };
 
 // Pool für Datenbankverbindungen

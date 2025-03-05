@@ -25,7 +25,7 @@ RUN apk add --no-cache mysql-client ca-certificates curl busybox-extras
 
 # Problemumgehung für MySQL-Client
 RUN mkdir -p /etc/mysql/conf.d
-RUN echo "[client]\nprotocol=tcp\n" > /etc/mysql/conf.d/client.cnf
+RUN echo "[client]\nprotocol=tcp\nssl-mode=DISABLED\n" > /etc/mysql/conf.d/client.cnf
 
 WORKDIR /app
 
@@ -68,6 +68,10 @@ ENV DB_PORT="3306"
 ENV DB_USER="checkin"
 ENV DB_PASSWORD="checkin"
 ENV DB_NAME="checkin_db"
+
+# SSL für MySQL-Client deaktivieren
+ENV MYSQL_PWD="$DB_PASSWORD"
+ENV MYSQL_SSL_MODE="DISABLED"
 
 # Port freigeben
 EXPOSE 3000
