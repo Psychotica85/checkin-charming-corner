@@ -11,28 +11,25 @@ const dbConfig = {
   queueLimit: 0
 };
 
-// Prüfen, ob wir im Browser-Kontext sind
-export const isBrowser = typeof window !== 'undefined';
-
-// API-Basis-URL für Browser-Anfragen
+// API-Basis-URL für Anfragen
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 // Haupt-Wrapper-Funktion für Datenbankoperationen
 export const withDatabase = async <T>(
   databaseFunction: (conn: any) => Promise<T>
 ): Promise<T> => {
-  // Wenn wir im Browser sind, simulieren wir eine API-Anfrage
-  if (isBrowser) {
-    console.log("Browser-Kontext erkannt: Leite Anfrage an Backend-API weiter");
-    
+  // Wenn wir im Browser sind, nutzen wir API-Endpunkte
+  if (typeof window !== 'undefined') {
     try {
-      // In der produktiven Umgebung würden wir hier eine Fetch-Anfrage an den API-Server senden
-      // Da wir im Browser sind, erstellen wir eine Mock-Antwort für Demonstrations- und Entwicklungszwecke
-      return Promise.resolve({
-        success: true,
-        message: "Operation an Backend-API weitergeleitet",
-        data: []
-      } as any);
+      // Im Produktivbetrieb sollte hier ein API-Aufruf an den Server erfolgen
+      console.log("Client-seitiger API-Aufruf");
+      return await fetch(`${API_BASE_URL}/api/db-operation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ operation: 'db-operation' }),
+      }).then(res => res.json());
     } catch (error) {
       console.error("Fehler bei der API-Anfrage:", error);
       throw new Error("Kommunikation mit dem Backend fehlgeschlagen. Bitte versuchen Sie es später erneut.");
@@ -41,7 +38,7 @@ export const withDatabase = async <T>(
   
   // In diesem Fall sind wir im Node.js-Kontext und können MySQL direkt verwenden
   try {
-    console.log("Server-Kontext erkannt: Stelle direkte Datenbankverbindung her");
+    console.log("Server-Kontext: Stelle direkte Datenbankverbindung her");
     
     // Dynamischer Import von mysql2/promise, um Browserprobleme zu vermeiden
     const mysql = await import('mysql2/promise');
@@ -67,7 +64,7 @@ export const withDatabase = async <T>(
 // Datenbank-Initialisierung 
 export const initializeDatabase = async (): Promise<void> => {
   // Prüfen, ob wir im Browser-Kontext sind
-  if (isBrowser) {
+  if (typeof window !== 'undefined') {
     console.log("Browser-Kontext: Datenbank-Initialisierung wird vom Server durchgeführt");
     return;
   }

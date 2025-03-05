@@ -15,6 +15,3 @@ export const DEFAULT_COMPANY_SETTINGS = {
   logo: '',
   updatedAt: new Date().toISOString()
 };
-
-// Bestimmung, ob die Anwendung im Browser läuft
-export const isBrowser = typeof window !== 'undefined';
