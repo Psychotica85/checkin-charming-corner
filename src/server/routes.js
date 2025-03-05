@@ -135,14 +135,19 @@ router.post('/api/checkin', async (req, res) => {
     const checkInId = uuidv4();
     console.log(`UUID für Check-in generiert: ${checkInId}`);
     
+    // Starte Speichern eines Check-ins
+    console.log('Starte Speichern eines Check-ins');
+    
     await withDatabase(async (connection) => {
       console.log('Datenbankverbindung für Speichern eines Check-ins hergestellt');
       
       // Check-in-Daten in Datenbank speichern
       const params = [
-        checkInId,  // UUID anstatt undefined
+        checkInId,
         req.body.firstName,
         req.body.lastName,
+        // Hier fullName explizit hinzufügen
+        req.body.firstName + ' ' + req.body.lastName,
         req.body.company,
         req.body.visitReason,
         req.body.visitDate,
@@ -156,12 +161,17 @@ router.post('/api/checkin', async (req, res) => {
       
       console.log('SQL-Parameter für Check-in:', params);
       
-      // SQL-Abfrage ausführen
+      // SQL-Abfrage aktualisieren, um fullName explizit einzufügen
       await connection.query(
-        `INSERT INTO checkins (id, firstName, lastName, company, visitReason, visitDate, visitTime, acceptedRules, acceptedDocuments, timestamp, timezone, pdfData) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO checkins (
+          id, firstName, lastName, fullName, company, visitReason, 
+          visitDate, visitTime, acceptedRules, acceptedDocuments, 
+          timestamp, timezone, pdfData
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         params
       );
+      
+      console.log(`Check-in mit ID ${checkInId} erfolgreich gespeichert`);
       
       return { success: true, id: checkInId };
     }, 'Speichern eines Check-ins');
