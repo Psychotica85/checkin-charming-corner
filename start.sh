@@ -13,7 +13,7 @@ echo "Prüfe MySQL-Verbindung..."
 echo "Verwende $DB_HOST für Datenbankverbindungsprüfung"
 
 retry_count=0
-max_retries=30
+max_retries=15
 
 until [ $retry_count -eq $max_retries ] || (mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" --protocol=TCP -e "SELECT 1" >/dev/null 2>&1); do
     echo "Warte auf Datenbankverbindung ($retry_count/$max_retries)..."

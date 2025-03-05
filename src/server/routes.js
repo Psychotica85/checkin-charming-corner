@@ -141,13 +141,15 @@ router.post('/api/checkin', async (req, res) => {
     await withDatabase(async (connection) => {
       console.log('Datenbankverbindung für Speichern eines Check-ins hergestellt');
       
+      // Wir generieren den fullName aus firstName und lastName
+      const fullName = `${req.body.firstName} ${req.body.lastName}`;
+      
       // Check-in-Daten in Datenbank speichern
       const params = [
         checkInId,
         req.body.firstName,
         req.body.lastName,
-        // Hier fullName explizit hinzufügen
-        req.body.firstName + ' ' + req.body.lastName,
+        fullName,              // Hier wird fullName explizit übergeben
         req.body.company,
         req.body.visitReason,
         req.body.visitDate,
@@ -155,13 +157,13 @@ router.post('/api/checkin', async (req, res) => {
         req.body.acceptedRules ? 1 : 0,
         JSON.stringify(req.body.acceptedDocuments || []),
         req.body.timestamp,
-        'UTC', // Zeitzone
-        null   // PDF-Daten werden später generiert
+        'UTC',                 // Zeitzone
+        null                   // PDF-Daten werden später generiert
       ];
       
       console.log('SQL-Parameter für Check-in:', params);
       
-      // SQL-Abfrage aktualisieren, um fullName explizit einzufügen
+      // WICHTIG: fullName in die SQL-Abfrage aufnehmen
       await connection.query(
         `INSERT INTO checkins (
           id, firstName, lastName, fullName, company, visitReason, 
