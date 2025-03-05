@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { generateCheckInReport } from '../lib/pdfGenerator.js';
 import { getDocuments } from '../lib/services/documentService.js';
 import { sendEmailWithPDF } from '../lib/services/emailService.js';
-import { saveCheckIn } from '../lib/services/checkInService';
+import { saveCheckIn } from '../lib/services/checkInService/index.js';
 import { getConfig } from '../lib/api/config';
 
 // ES Module-Fix für __dirname
