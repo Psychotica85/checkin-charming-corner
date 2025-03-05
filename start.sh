@@ -12,8 +12,9 @@ echo "Prüfe MySQL-Verbindung..."
 max_retries=30
 retry_count=0
 
-# Deaktiviere SSL-Validierung für den MySQL-Client
+# Verwende konfigurierte Datenbank-Host-Adresse
 echo "Verwende $DB_HOST für Datenbankverbindungsprüfung"
+
 # Verbindungsversuch mit mysql ohne SSL
 until [ $retry_count -eq $max_retries ] || (mysql --ssl-mode=DISABLED -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" -e "SELECT 1" >/dev/null 2>&1); do
     echo "Warte auf Datenbankverbindung ($retry_count/$max_retries)..."
