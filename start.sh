@@ -1,3 +1,4 @@
+
 #!/bin/sh
 
 # Bessere Debug-Ausgaben
@@ -28,6 +29,17 @@ if [ $retry_count -eq $max_retries ]; then
     echo "Starte die Anwendung trotzdem..."
 else
     echo "Datenbankverbindung erfolgreich hergestellt!"
+
+    # Initialisiere die Datenbank
+    echo "Initialisiere Datenbank..."
+    node init-database.js
+    
+    if [ $? -ne 0 ]; then
+        echo "Warnung: Datenbank-Initialisierung fehlgeschlagen."
+        echo "Starte die Anwendung trotzdem..."
+    else
+        echo "Datenbank erfolgreich initialisiert!"
+    fi
 fi
 
 echo "SMTP-Konfiguration:"

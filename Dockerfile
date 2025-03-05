@@ -1,3 +1,4 @@
+
 FROM node:18-alpine AS builder
 
 # Arbeitssverzeichnis setzen
@@ -35,6 +36,7 @@ COPY --from=builder /app/src/server ./src/server
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/start.sh ./start.sh
 COPY --from=builder /app/server.js ./server.js
+COPY --from=builder /app/init-database.js ./init-database.js
 
 # Nur Produktionsabhängigkeiten installieren
 RUN npm install --production --no-optional --no-audit && \

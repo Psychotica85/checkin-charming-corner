@@ -1,3 +1,4 @@
+
 version: '3'
 
 services:
@@ -46,10 +47,10 @@ services:
       start_period: 40s
 
   mysql:
-    # Ältere, stabilere Version verwenden
-    image: mysql:8.0
-    # Vereinfachte Konfiguration ohne problematische Parameter
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --bind-address=0.0.0.0
+    # Verwende MySQL 9
+    image: mysql:9
+    # Konfiguration mit authentication-policy statt default-authentication-plugin
+    command: --authentication-policy=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --bind-address=0.0.0.0
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -58,6 +59,7 @@ services:
       MYSQL_PASSWORD: checkin
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./mysql-config:/etc/mysql/conf.d
     ports:
       - "3306:3306"
     healthcheck:
