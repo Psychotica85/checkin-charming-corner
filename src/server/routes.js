@@ -4,6 +4,9 @@ import { fileURLToPath } from 'url';
 import { withDatabase, initializeDatabase } from './database.js';
 import { isSmtpConfigured, SMTP_CONFIG } from './config.js';
 import { v4 as uuidv4 } from 'uuid';
+import { generateCheckInReport } from '../lib/pdfGenerator.js';
+import { getDocuments } from '../lib/services/documentService.js';
+import { sendEmailWithPDF } from '../lib/services/emailService.js';
 
 // ES Module-Fix für __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -138,8 +141,77 @@ router.post('/api/checkin', async (req, res) => {
     // Starte Speichern eines Check-ins
     console.log('Starte Speichern eines Check-ins');
     
-    let pdfUrl = null; // Variable für die PDF-URL initialisieren
+    let pdfUrl = null;
+    let pdfBase64 = null;
     
+    // Dokumente abrufen (für PDF)
+    const documents = await getDocuments();
+    console.log(`${documents.length} Dokumente für PDF gefunden`);
+    
+    // Unternehmenseinstellungen abrufen (für PDF)
+    let companySettings = null;
+    await withDatabase(async (connection) => {
+      const [settings] = await connection.query(
+        'SELECT * FROM company_settings LIMIT 1'
+      );
+      if (settings && settings.length > 0) {
+        companySettings = settings[0];
+        console.log('Unternehmenseinstellungen für PDF geladen');
+      }
+    });
+    
+    // PDF generieren
+    try {
+      console.log('Generiere PDF für Check-in...');
+      const checkInData = {
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        company: req.body.company,
+        visitReason: req.body.visitReason,
+        visitDate: new Date(req.body.visitDate),
+        visitTime: req.body.visitTime,
+        acceptedDocuments: req.body.acceptedDocuments || [],
+        timestamp: new Date(req.body.timestamp)
+      };
+      
+      const pdfBlob = await generateCheckInReport(checkInData, documents, companySettings);
+      
+      // Blob in Base64 konvertieren
+      const arrayBuffer = await pdfBlob.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      pdfBase64 = `data:application/pdf;base64,${buffer.toString('base64')}`;
+      
+      console.log('PDF erfolgreich generiert');
+      
+      // PDF-URL setzen (für die Antwort)
+      pdfUrl = `/api/reports/${checkInId}`;
+      
+      // E-Mail mit PDF senden
+      try {
+        const fullName = `${req.body.firstName} ${req.body.lastName}`;
+        const pdfFilename = `checkin-${fullName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+        
+        await sendEmailWithPDF(
+          'Neuer Besucher Check-In', 
+          pdfBase64,
+          pdfFilename,
+          fullName,
+          req.body.company,
+          req.body.visitReason
+        );
+        
+        console.log('E-Mail mit PDF erfolgreich gesendet');
+      } catch (emailError) {
+        console.error('Fehler beim E-Mail-Versand:', emailError);
+        // Fehler beim E-Mail-Versand ignorieren, Check-in trotzdem fortsetzen
+      }
+      
+    } catch (pdfError) {
+      console.error('Fehler bei der PDF-Generierung:', pdfError);
+      // Trotzdem weitermachen - Check-in speichern ohne PDF
+    }
+    
+    // Check-in in Datenbank speichern
     await withDatabase(async (connection) => {
       console.log('Datenbankverbindung für Speichern eines Check-ins hergestellt');
       
@@ -160,7 +232,7 @@ router.post('/api/checkin', async (req, res) => {
         JSON.stringify(req.body.acceptedDocuments || []),
         req.body.timestamp,
         'UTC',
-        null
+        pdfBase64 // PDF-Base64-Daten speichern
       ];
       
       console.log('SQL-Parameter für Check-in:', params);
@@ -176,20 +248,16 @@ router.post('/api/checkin', async (req, res) => {
       );
       
       console.log(`Check-in mit ID ${checkInId} erfolgreich gespeichert`);
-      
-      // Optional: Hier PDF-Generierung und weitere Verarbeitung
-      // Wenn du eine PDF-URL hast, speichere sie in der Variable pdfUrl
-      // pdfUrl = 'http://example.com/pdf/' + checkInId;
     });
     
     console.log('Speichern eines Check-ins erfolgreich abgeschlossen');
     
-    // Antwort senden - mit dem richtigen Format
+    // Antwort senden
     res.status(200).json({
       success: true,
       message: 'Check-in erfolgreich gespeichert',
       checkInId: checkInId,
-      reportUrl: pdfUrl // Hier die PDF-URL zurückgeben, falls vorhanden
+      reportUrl: pdfUrl
     });
     
   } catch (error) {
@@ -204,18 +272,27 @@ router.post('/api/checkin', async (req, res) => {
 router.get('/api/checkins', async (req, res) => {
   try {
     console.log('Abrufen aller Check-ins');
+    console.log('Starte Abrufen aller Check-ins');
     
-    const checkins = await withDatabase(async (conn) => {
-      const [rows] = await conn.query('SELECT * FROM checkins ORDER BY timestamp DESC');
-      return rows;
-    }, 'Abrufen aller Check-ins');
+    await withDatabase(async (connection) => {
+      console.log('Datenbankverbindung für Abrufen aller Check-ins hergestellt');
+      
+      const [rows] = await connection.query(`
+        SELECT id, firstName, lastName, fullName, company, visitReason, 
+               visitDate, visitTime, timestamp, acceptedRules, acceptedDocuments
+        FROM checkins 
+        ORDER BY timestamp DESC
+      `);
+      
+      console.log('Abrufen aller Check-ins erfolgreich abgeschlossen');
+      res.json(rows);
+    });
     
-    res.json(checkins);
   } catch (error) {
-    console.error('Fehler beim Abrufen der Check-ins:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: `Fehler beim Abrufen der Check-ins: ${error.message}` 
+    console.error('Fehler beim Abrufen aller Check-ins:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Fehler beim Abrufen der Check-ins: ' + error.message
     });
   }
 });
@@ -375,6 +452,48 @@ router.delete('/api/document/:id', async (req, res) => {
       success: false, 
       message: `Fehler beim Löschen des Dokuments: ${error.message}` 
     });
+  }
+});
+
+// PDF-Bericht-Route hinzufügen
+router.get('/api/reports/:id', async (req, res) => {
+  try {
+    const checkInId = req.params.id;
+    console.log(`Anforderung des PDF-Berichts für Check-in ID: ${checkInId}`);
+    
+    await withDatabase(async (connection) => {
+      const [checkins] = await connection.query(
+        'SELECT pdfData FROM checkins WHERE id = ?',
+        [checkInId]
+      );
+      
+      if (!checkins || checkins.length === 0) {
+        console.log(`Check-in mit ID ${checkInId} nicht gefunden`);
+        res.status(404).send('Check-in nicht gefunden');
+        return;
+      }
+      
+      const checkin = checkins[0];
+      
+      if (!checkin.pdfData) {
+        console.log(`Keine PDF-Daten für Check-in ID ${checkInId} vorhanden`);
+        res.status(404).send('PDF nicht gefunden');
+        return;
+      }
+      
+      // Base64-Daten extrahieren und als PDF senden
+      const base64Data = checkin.pdfData.split(',')[1];
+      const pdfBuffer = Buffer.from(base64Data, 'base64');
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="checkin-${checkInId}.pdf"`);
+      res.send(pdfBuffer);
+      
+      console.log(`PDF-Bericht für Check-in ID ${checkInId} erfolgreich gesendet`);
+    });
+  } catch (error) {
+    console.error('Fehler beim Abrufen des PDF-Berichts:', error);
+    res.status(500).send('Fehler beim Abrufen des PDF-Berichts');
   }
 });
 
