@@ -30,6 +30,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/src/server ./src/server
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/start.sh ./start.sh
+COPY --from=builder /app/src/server/server.js ./server.js
 
 # Nur Produktionsabhängigkeiten installieren
 RUN npm install --production --no-optional --no-audit && \
