@@ -1,9 +1,8 @@
 
-#!/usr/bin/env node
-
 /**
- * Dieses Skript initialisiert die Datenbank für das Besucher Check-In System
- * Es erstellt die benötigten Tabellen und fügt Standarddaten ein
+ * Initialisierungs-Skript für die Datenbank
+ * Dieses Skript wird beim Start der Anwendung ausgeführt, 
+ * um sicherzustellen, dass die Datenbank und alle Tabellen existieren
  */
 
 import mysql from 'mysql2/promise';
@@ -15,7 +14,7 @@ const dbConfig = {
   user: process.env.DB_USER || 'checkin',
   password: process.env.DB_PASSWORD || 'checkin',
   waitForConnections: true,
-  connectionLimit: 1,
+  connectionLimit: 10,
   queueLimit: 0,
   ssl: false
 };
@@ -25,34 +24,42 @@ const dbName = process.env.DB_NAME || 'checkin_db';
 
 // Hauptfunktion zur Datenbankinitialisierung
 async function initializeDatabase() {
-  console.log('=== Besucher Check-In System: Datenbank-Initialisierung ===');
-  console.log('Verbinde mit MySQL-Server...');
+  console.log('=== Datenbank-Initialisierung gestartet ===');
+  console.log(`Datenbankeinstellungen:
+    Host: ${dbConfig.host}
+    Port: ${dbConfig.port}
+    Benutzer: ${dbConfig.user}
+    Datenbank: ${process.env.DB_NAME || 'checkin_db'}
+  `);
   
   let connection;
+  let initialDb;
   
   try {
-    // Verbindung ohne Datenbank herstellen (um die Datenbank zu erstellen)
-    connection = await mysql.createConnection({
+    // Verbindung zum MySQL-Server herstellen (ohne Datenbankauswahl)
+    initialDb = await mysql.createConnection({
       host: dbConfig.host,
       port: dbConfig.port,
       user: dbConfig.user,
-      password: dbConfig.password,
-      ssl: dbConfig.ssl
+      password: dbConfig.password
     });
     
     console.log(`Verbindung zum MySQL-Server hergestellt: ${dbConfig.host}:${dbConfig.port}`);
     
     // Datenbank erstellen, falls sie nicht existiert
-    await connection.query(`CREATE DATABASE IF NOT EXISTS ${dbName} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    await initialDb.query(`CREATE DATABASE IF NOT EXISTS ${dbName} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
     console.log(`Datenbank '${dbName}' überprüft/erstellt`);
     
-    // Datenbank auswählen
-    await connection.query(`USE ${dbName}`);
+    // Verbindung zur Datenbank schließen
+    await initialDb.end();
+    
+    // Neue Verbindung mit ausgewählter Datenbank
+    connection = await mysql.createConnection({
+      ...dbConfig,
+      database: dbName
+    });
     
     // Tabellen erstellen
-    console.log('Erstelle Tabellen...');
-    
-    // Check-ins Tabelle
     await connection.query(`
       CREATE TABLE IF NOT EXISTS checkins (
         id VARCHAR(36) PRIMARY KEY,
@@ -73,7 +80,6 @@ async function initializeDatabase() {
     `);
     console.log("Tabelle 'checkins' überprüft/erstellt");
     
-    // Dokumente Tabelle
     await connection.query(`
       CREATE TABLE IF NOT EXISTS documents (
         id VARCHAR(36) PRIMARY KEY,
@@ -86,11 +92,9 @@ async function initializeDatabase() {
     `);
     console.log("Tabelle 'documents' überprüft/erstellt");
     
-    // Unternehmenseinstellungen Tabelle
     await connection.query(`
       CREATE TABLE IF NOT EXISTS company_settings (
         id VARCHAR(36) PRIMARY KEY,
-        name VARCHAR(200) NOT NULL DEFAULT 'Mein Unternehmen',
         address TEXT,
         logo LONGTEXT,
         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -102,36 +106,34 @@ async function initializeDatabase() {
     
     // Prüfen, ob bereits Unternehmenseinstellungen existieren, sonst Standardwerte einfügen
     const [settings] = await connection.query('SELECT COUNT(*) as count FROM company_settings');
-    const settingsCount = settings[0].count;
+    const settingsCount = (settings as any)[0].count;
     
     if (settingsCount === 0) {
       await connection.query(`
-        INSERT INTO company_settings (id, name, address, createdAt, updatedAt)
-        VALUES ('1', 'Mein Unternehmen', 'Musterstraße 1, 12345 Musterstadt', NOW(), NOW())
+        INSERT INTO company_settings (id, address, createdAt, updatedAt)
+        VALUES ('1', 'Musterfirma GmbH\nMusterstraße 123\n12345 Musterstadt\nDeutschland', NOW(), NOW())
       `);
       console.log("Standard-Unternehmenseinstellungen eingefügt");
     }
     
-    console.log('Datenbankinitialisierung erfolgreich abgeschlossen!');
+    console.log('=== Datenbank-Initialisierung erfolgreich abgeschlossen ===');
     return true;
   } catch (error) {
     console.error('Fehler bei der Datenbankinitialisierung:', error);
-    throw error;
+    return false;
   } finally {
-    if (connection) {
-      await connection.end();
-      console.log('Datenbankverbindung geschlossen');
-    }
+    if (connection) await connection.end();
+    if (initialDb && initialDb.end) await initialDb.end();
   }
 }
 
-// Skript ausführen
-initializeDatabase()
-  .then(() => {
-    console.log('Datenbank-Setup erfolgreich abgeschlossen!');
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error('Fehler beim Datenbank-Setup:', error);
-    process.exit(1);
+// Direkt ausführen, wenn Skript direkt aufgerufen wird
+if (process.argv[1] === import.meta.url) {
+  initializeDatabase().then(success => {
+    if (!success) {
+      process.exit(1);
+    }
   });
+}
+
+export default initializeDatabase;
