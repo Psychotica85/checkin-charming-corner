@@ -8,7 +8,8 @@ RUN apk add --no-cache python3 make g++ ca-certificates curl
 
 # Paketdateien kopieren und alle Abhängigkeiten für den Build installieren
 COPY package*.json ./
-RUN npm install
+# Verwende --verbose und --no-audit, um mehr Details zu erhalten und unnötige Prüfungen zu überspringen
+RUN npm install --verbose --no-audit
 
 # Projektdateien kopieren
 COPY . .
@@ -31,7 +32,7 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/start.sh ./start.sh
 
 # Nur Produktionsabhängigkeiten installieren
-RUN npm install --production --no-optional && \
+RUN npm install --production --no-optional --no-audit && \
     chmod +x ./start.sh
 
 # Umgebungsvariablen setzen
