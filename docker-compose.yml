@@ -44,7 +44,7 @@ services:
 
   mysql:
     image: mysql:8.0
-    command: --default-authentication-plugin=mysql_native_password
+    command: --default-authentication-plugin=caching_sha2_password --skip-host-cache --set-variable host_cache_size=0
     restart: always
     environment:
       - MYSQL_ROOT_PASSWORD=root
@@ -56,7 +56,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "checkin", "-pcheckin"]
+      test: ["CMD", "mysql", "-h", "localhost", "-u", "checkin", "-pcheckin", "-e", "SELECT 1"]
       interval: 10s
       timeout: 5s
       retries: 5
