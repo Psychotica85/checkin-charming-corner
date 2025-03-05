@@ -1,5 +1,5 @@
 
-import { useLocalStorage, isBrowser } from "@/lib/database/connection";
+import { isBrowser } from "@/lib/database/connection";
 import {
   saveDocument as documentServiceSaveDocument,
   getDocuments as documentServiceGetDocuments,
