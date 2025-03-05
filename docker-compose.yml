@@ -10,7 +10,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
       
-      # Umgebungsvariablen für Vite und Datenbank
+      # Umgebungsvariablen für DB-Verbindung
       - VITE_ADMIN_USERNAME=admin
       - VITE_ADMIN_PASSWORD=admin
       - VITE_DB_HOST=mysql
@@ -19,7 +19,7 @@ services:
       - VITE_DB_PASSWORD=checkin
       - VITE_DB_NAME=checkin_db
       
-      # Datenbank-Konfiguration (für Server-Seite)
+      # Server-DB-Konfiguration
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_USER=checkin
@@ -46,25 +46,26 @@ services:
       start_period: 40s
 
   mysql:
-    image: mysql:8.3
-    command: --authentication-policy=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --ssl=0 --disable-ssl
+    # Ältere, stabilere Version verwenden
+    image: mysql:8.0
+    # Vereinfachte Konfiguration ohne problematische Parameter
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     restart: always
     environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=checkin_db
-      - MYSQL_USER=checkin
-      - MYSQL_PASSWORD=checkin
-    ports:
-      - "3306:3306"
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: checkin_db
+      MYSQL_USER: checkin
+      MYSQL_PASSWORD: checkin
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./mysql-config:/etc/mysql/conf.d
+    ports:
+      - "3306:3306"
     healthcheck:
-      test: mysqladmin ping -h localhost -u checkin -pcheckin
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
       interval: 20s
       timeout: 10s
       retries: 10
-      start_period: 60s
+      start_period: 40s
 
 volumes:
   mysql_data:

@@ -9,14 +9,12 @@ echo "- PORT: $PORT"
 
 # Datenbankverbindung testen
 echo "Prüfe MySQL-Verbindung..."
-max_retries=30
-retry_count=0
-
-# Verwende konfigurierte Datenbank-Host-Adresse
 echo "Verwende $DB_HOST für Datenbankverbindungsprüfung"
 
-# Verbindungsversuch mit mysql ohne SSL
-until [ $retry_count -eq $max_retries ] || (mysql --ssl-mode=DISABLED -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" -e "SELECT 1" >/dev/null 2>&1); do
+retry_count=0
+max_retries=30
+
+until [ $retry_count -eq $max_retries ] || (mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" --protocol=TCP -e "SELECT 1" >/dev/null 2>&1); do
     echo "Warte auf Datenbankverbindung ($retry_count/$max_retries)..."
     retry_count=$((retry_count+1))
     sleep 2
