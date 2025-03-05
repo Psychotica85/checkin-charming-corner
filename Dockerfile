@@ -1,13 +1,12 @@
-
-FROM node:18-alpine
+FROM node:18-alpine AS builder
 
 # Arbeitssverzeichnis setzen
 WORKDIR /app
 
 # Pakete für MySQL-Client und andere Abhängigkeiten installieren
-RUN apk add --no-cache python3 make g++ ca-certificates curl busybox-extras mysql-client
+RUN apk add --no-cache python3 make g++ ca-certificates curl
 
-# Paketdateien kopieren und Abhängigkeiten installieren
+# Paketdateien kopieren und alle Abhängigkeiten für den Build installieren
 COPY package*.json ./
 RUN npm install
 
@@ -17,8 +16,23 @@ COPY . .
 # Anwendung bauen
 RUN npm run build
 
-# Startskript ausführbar machen
-RUN chmod +x ./start.sh
+# Zweites Stage für die eigentliche Anwendung
+FROM node:18-alpine
+
+# MySQL-Client installieren
+RUN apk add --no-cache mysql-client ca-certificates curl busybox-extras
+
+WORKDIR /app
+
+# Nur die notwendigen Dateien aus dem Builder kopieren
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/src/server ./src/server
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/start.sh ./start.sh
+
+# Nur Produktionsabhängigkeiten installieren
+RUN npm install --production --no-optional && \
+    chmod +x ./start.sh
 
 # Umgebungsvariablen setzen
 ENV NODE_ENV=production

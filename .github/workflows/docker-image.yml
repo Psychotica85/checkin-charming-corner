@@ -1,4 +1,3 @@
-
 name: Docker Build and Push
 
 on:
@@ -39,3 +38,5 @@ jobs:
         platforms: linux/amd64,linux/arm64
         cache-from: type=registry,ref=ghcr.io/psychotica85/checkin-charming-corner:buildcache
         cache-to: type=registry,ref=ghcr.io/psychotica85/checkin-charming-corner:buildcache,mode=max
+        # Detaillierte Build-Ausgabe aktivieren
+        outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=Checkin Charming Corner Application
