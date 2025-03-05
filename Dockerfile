@@ -23,6 +23,10 @@ FROM node:18-alpine
 # MySQL-Client installieren
 RUN apk add --no-cache mysql-client ca-certificates curl busybox-extras
 
+# Problemumgehung für MySQL-Client
+RUN mkdir -p /etc/mysql/conf.d
+RUN echo "[client]\nprotocol=tcp\n" > /etc/mysql/conf.d/client.cnf
+
 WORKDIR /app
 
 # Nur die notwendigen Dateien aus dem Builder kopieren

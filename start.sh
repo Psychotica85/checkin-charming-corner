@@ -15,12 +15,12 @@ retry_count=0
 # Verwende konfigurierte Datenbank-Host-Adresse
 echo "Verwende $DB_HOST für Datenbankverbindungsprüfung"
 
-# Verbindungsversuch mit mysql
-until [ $retry_count -eq $max_retries ] || (mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" -e "SELECT 1" >/dev/null 2>&1); do
-    echo "Warte auf Datenbankverbindung ($retry_count/$max_retries)..."
-    retry_count=$((retry_count+1))
-    sleep 2
-done
+# Teste mit detaillierten Fehlerausgaben
+echo "Verbindungstest mit: mysql -h$DB_HOST -P$DB_PORT -u$DB_USER -p$DB_PASSWORD"
+mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" -e "SELECT 1" 2>&1
+
+# Oder verwende einen besseren Testbefehl mit Timeout
+MYSQL_PWD="$DB_PASSWORD" mysqladmin -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" ping
 
 if [ $retry_count -eq $max_retries ]; then
     echo "Warnung: Konnte keine Verbindung zur Datenbank herstellen."
