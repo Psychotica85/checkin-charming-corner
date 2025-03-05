@@ -46,7 +46,7 @@ services:
       start_period: 40s
 
   mysql:
-    # Zurück zu MySQL 8.0
+    # Verwende MySQL 8.0
     image: mysql:8.0
     # Konfiguration zurück zur ursprünglichen Version
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --bind-address=0.0.0.0
