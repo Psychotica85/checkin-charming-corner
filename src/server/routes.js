@@ -1,12 +1,14 @@
-import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { withDatabase, initializeDatabase } from './database.js';
-import { isSmtpConfigured, SMTP_CONFIG } from './config.js';
-import { v4 as uuidv4 } from 'uuid';
-import { generateCheckInReport } from '../dist/lib/pdfGenerator.js';
-import { getDocuments } from '../dist/lib/services/documentService.js';
-import { sendEmailWithPDF } from '../dist/lib/services/emailService.js';
+const express = require('express');
+const path = require('path');
+const { fileURLToPath } = require('url');
+const { withDatabase, initializeDatabase } = require('./database.js');
+const { isSmtpConfigured, SMTP_CONFIG } = require('./config.js');
+const { v4: uuidv4 } = require('uuid');
+const { generateCheckInReport } = require('../dist/lib/pdfGenerator.js');
+const { getDocuments } = require('../dist/lib/services/documentService.js');
+const { sendEmailWithPDF } = require('../dist/lib/services/emailService.js');
+const { saveCheckIn } = require('../lib/services/checkInService');
+const { getConfig } = require('../lib/api/config');
 
 // ES Module-Fix für __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -132,168 +134,46 @@ router.get('/api/test-db', async (req, res) => {
 // API-Route für Check-In-Operationen
 router.post('/api/checkin', async (req, res) => {
   try {
-    console.log('Check-in API aufgerufen mit:', req.body);
+    const checkInData = req.body;
     
-    // UUID für Check-in generieren
-    const checkInId = uuidv4();
-    console.log(`UUID für Check-in generiert: ${checkInId}`);
-    
-    // Starte Speichern eines Check-ins
-    console.log('Starte Speichern eines Check-ins');
-    
-    let pdfUrl = null;
-    let pdfBase64 = null;
-    
-    // Dokumente abrufen (für PDF)
-    const documents = await getDocuments();
-    console.log(`${documents.length} Dokumente für PDF gefunden`);
-    
-    // Unternehmenseinstellungen abrufen (für PDF)
-    let companySettings = null;
-    await withDatabase(async (connection) => {
-      const [settings] = await connection.query(
-        'SELECT * FROM company_settings LIMIT 1'
-      );
-      if (settings && settings.length > 0) {
-        companySettings = settings[0];
-        console.log('Unternehmenseinstellungen für PDF geladen');
-      }
-    });
-    
-    // PDF generieren
-    try {
-      console.log('Generiere PDF für Check-in...');
-      const checkInData = {
-        firstName: req.body.firstName,
-        lastName: req.body.lastName,
-        company: req.body.company,
-        visitReason: req.body.visitReason,
-        visitDate: new Date(req.body.visitDate),
-        visitTime: req.body.visitTime,
-        acceptedDocuments: req.body.acceptedDocuments || [],
-        timestamp: new Date(req.body.timestamp)
-      };
-      
-      const pdfBlob = await generateCheckInReport(checkInData, documents, companySettings);
-      
-      // Blob in Base64 konvertieren
-      const arrayBuffer = await pdfBlob.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      pdfBase64 = `data:application/pdf;base64,${buffer.toString('base64')}`;
-      
-      console.log('PDF erfolgreich generiert');
-      
-      // PDF-URL setzen (für die Antwort)
-      pdfUrl = `/api/reports/${checkInId}`;
-      
-      // E-Mail mit PDF senden
-      try {
-        const fullName = `${req.body.firstName} ${req.body.lastName}`;
-        const pdfFilename = `checkin-${fullName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
-        
-        await sendEmailWithPDF(
-          'Neuer Besucher Check-In', 
-          pdfBase64,
-          pdfFilename,
-          fullName,
-          req.body.company,
-          req.body.visitReason
-        );
-        
-        console.log('E-Mail mit PDF erfolgreich gesendet');
-      } catch (emailError) {
-        console.error('Fehler beim E-Mail-Versand:', emailError);
-        // Fehler beim E-Mail-Versand ignorieren, Check-in trotzdem fortsetzen
-      }
-      
-    } catch (pdfError) {
-      console.error('Fehler bei der PDF-Generierung:', pdfError);
-      // Trotzdem weitermachen - Check-in speichern ohne PDF
+    // UUID generieren falls nicht vorhanden
+    if (!checkInData.id) {
+      checkInData.id = uuidv4();
     }
     
-    // Check-in in Datenbank speichern
-    await withDatabase(async (connection) => {
-      console.log('Datenbankverbindung für Speichern eines Check-ins hergestellt');
-      
-      // Wir generieren den fullName aus firstName und lastName
-      const fullName = `${req.body.firstName} ${req.body.lastName}`;
-      
-      // Check-in-Daten in Datenbank speichern
-      const params = [
-        checkInId,
-        req.body.firstName,
-        req.body.lastName,
-        fullName,
-        req.body.company,
-        req.body.visitReason,
-        req.body.visitDate,
-        req.body.visitTime,
-        req.body.acceptedRules ? 1 : 0,
-        JSON.stringify(req.body.acceptedDocuments || []),
-        req.body.timestamp,
-        'UTC',
-        pdfBase64 // PDF-Base64-Daten speichern
-      ];
-      
-      console.log('SQL-Parameter für Check-in:', params);
-      
-      // WICHTIG: fullName in die SQL-Abfrage aufnehmen
-      await connection.query(
-        `INSERT INTO checkins (
-          id, firstName, lastName, fullName, company, visitReason, 
-          visitDate, visitTime, acceptedRules, acceptedDocuments, 
-          timestamp, timezone, pdfData
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        params
-      );
-      
-      console.log(`Check-in mit ID ${checkInId} erfolgreich gespeichert`);
+    // CheckIn in die Datenbank speichern
+    await saveCheckIn(checkInData);
+    
+    // PDF generieren
+    const pdfPath = await generateCheckInReport(checkInData, await getDocuments(), null);
+    
+    res.json({ 
+      success: true, 
+      message: 'Check-in saved successfully', 
+      checkInId: checkInData.id,
+      pdfPath: pdfPath
     });
-    
-    console.log('Speichern eines Check-ins erfolgreich abgeschlossen');
-    
-    // Antwort senden
-    res.status(200).json({
-      success: true,
-      message: 'Check-in erfolgreich gespeichert',
-      checkInId: checkInId,
-      reportUrl: pdfUrl
-    });
-    
   } catch (error) {
-    console.error('Fehler bei Speichern eines Check-ins:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Fehler beim Speichern des Check-ins: ' + error.message
+    console.error('Error saving check-in:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to save check-in', 
+      error: error.message 
     });
   }
 });
 
 router.get('/api/checkins', async (req, res) => {
   try {
-    console.log('Abrufen aller Check-ins');
-    console.log('Starte Abrufen aller Check-ins');
+    const [checkins] = await withDatabase(async (conn) => {
+      const [rows] = await conn.query('SELECT * FROM checkins');
+      return rows;
+    }, 'Abrufen aller Check-ins');
     
-    await withDatabase(async (connection) => {
-      console.log('Datenbankverbindung für Abrufen aller Check-ins hergestellt');
-      
-      const [rows] = await connection.query(`
-        SELECT id, firstName, lastName, fullName, company, visitReason, 
-               visitDate, visitTime, timestamp, acceptedRules, acceptedDocuments
-        FROM checkins 
-        ORDER BY timestamp DESC
-      `);
-      
-      console.log('Abrufen aller Check-ins erfolgreich abgeschlossen');
-      res.json(rows);
-    });
-    
+    res.json(checkins);
   } catch (error) {
-    console.error('Fehler beim Abrufen aller Check-ins:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Fehler beim Abrufen der Check-ins: ' + error.message
-    });
+    console.error('Error fetching checkins:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -461,39 +341,29 @@ router.get('/api/reports/:id', async (req, res) => {
     const checkInId = req.params.id;
     console.log(`Anforderung des PDF-Berichts für Check-in ID: ${checkInId}`);
     
-    await withDatabase(async (connection) => {
-      const [checkins] = await connection.query(
-        'SELECT pdfData FROM checkins WHERE id = ?',
-        [checkInId]
-      );
-      
-      if (!checkins || checkins.length === 0) {
-        console.log(`Check-in mit ID ${checkInId} nicht gefunden`);
-        res.status(404).send('Check-in nicht gefunden');
-        return;
-      }
-      
-      const checkin = checkins[0];
-      
-      if (!checkin.pdfData) {
-        console.log(`Keine PDF-Daten für Check-in ID ${checkInId} vorhanden`);
-        res.status(404).send('PDF nicht gefunden');
-        return;
-      }
-      
-      // Base64-Daten extrahieren und als PDF senden
-      const base64Data = checkin.pdfData.split(',')[1];
-      const pdfBuffer = Buffer.from(base64Data, 'base64');
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="checkin-${checkInId}.pdf"`);
-      res.send(pdfBuffer);
-      
-      console.log(`PDF-Bericht für Check-in ID ${checkInId} erfolgreich gesendet`);
-    });
+    const [checkIns] = await withDatabase(async (conn) => {
+      const [rows] = await conn.query('SELECT * FROM checkins WHERE id = ?', [checkInId]);
+      return rows;
+    }, 'Abrufen des Check-ins');
+    
+    if (checkIns.length === 0) {
+      console.log(`Check-in mit ID ${checkInId} nicht gefunden`);
+      res.status(404).json({ error: 'Check-in not found' });
+      return;
+    }
+    
+    const checkInData = checkIns[0];
+    
+    // Generiere PDF (falls nicht bereits vorhanden)
+    const pdfPath = await generateCheckInReport(checkInData, await getDocuments(), null);
+    
+    // Sende PDF
+    res.sendFile(pdfPath, { root: '.' });
+    
+    console.log(`PDF-Bericht für Check-in ID ${checkInId} erfolgreich gesendet`);
   } catch (error) {
-    console.error('Fehler beim Abrufen des PDF-Berichts:', error);
-    res.status(500).send('Fehler beim Abrufen des PDF-Berichts');
+    console.error('Error generating report:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -505,4 +375,4 @@ router.get('*', (req, res) => {
   res.sendFile(path.join(rootDir, 'dist', 'index.html'));
 });
 
-export default router;
+module.exports = router;
