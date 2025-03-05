@@ -35,9 +35,15 @@ services:
       - DB_PASSWORD=checkin
       - DB_NAME=checkin_db
     depends_on:
-      mysql:
-        condition: service_healthy
+      - mysql
     restart: unless-stopped
+    # Eigener Healthcheck für den App-Container
+    healthcheck:
+      test: curl --fail http://localhost:3000/api/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
   mysql:
     image: mysql:8.3
@@ -54,10 +60,12 @@ services:
       - mysql_data:/var/lib/mysql
       - ./mysql-config:/etc/mysql/conf.d
     healthcheck:
-      test: ["CMD", "mysql", "-h", "localhost", "-u", "checkin", "-pcheckin", "-e", "SELECT 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      # Verbesserten Healthcheck verwenden
+      test: mysqladmin ping -h localhost -u checkin -pcheckin
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s # Mehr Zeit für die initiale Einrichtung geben
 
 volumes:
   mysql_data:
