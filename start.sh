@@ -8,25 +8,16 @@ echo "Starte mit Konfiguration:"
 echo "- NODE_ENV: $NODE_ENV"
 echo "- PORT: $PORT"
 
-# Datenbankverbindung testen (Verwendung von mariadb-admin statt mysqladmin)
-echo "Prüfe MySQL/MariaDB-Verbindung..."
+# Datenbankverbindung testen
+echo "Prüfe MySQL-Verbindung..."
 max_retries=30
 retry_count=0
 
-# Prüfe, welches Kommando verfügbar ist (mysql, mariadb-admin oder mysqladmin)
-if command -v mariadb-admin >/dev/null 2>&1; then
-    DB_COMMAND="mariadb-admin"
-    echo "Verwende mariadb-admin für Datenbankverbindungsprüfung"
-elif command -v mysql >/dev/null 2>&1; then
-    DB_COMMAND="mysql"
-    echo "Verwende mysql für Datenbankverbindungsprüfung"
-else
-    DB_COMMAND="mysqladmin"
-    echo "Verwende mysqladmin (veraltet) für Datenbankverbindungsprüfung"
-fi
+# Verwende mysql für Datenbankverbindungsprüfung
+echo "Verwende mysql für Datenbankverbindungsprüfung"
 
-# Verbindungsversuch mit dem passenden Kommando
-until [ $retry_count -eq $max_retries ] || ($DB_COMMAND -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" -e "SELECT 1" >/dev/null 2>&1); do
+# Verbindungsversuch mit mysql
+until [ $retry_count -eq $max_retries ] || (mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" -e "SELECT 1" >/dev/null 2>&1); do
     echo "Warte auf Datenbankverbindung ($retry_count/$max_retries)..."
     retry_count=$((retry_count+1))
     sleep 2
