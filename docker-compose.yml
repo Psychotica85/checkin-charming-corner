@@ -2,11 +2,9 @@ version: '3'
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/psychotica85/checkin-charming-corner:latest
     ports:
-      - "4000:4000"
+      - "4000:3000"
     environment:
       # Grundlegende Konfiguration
       - NODE_ENV=production
