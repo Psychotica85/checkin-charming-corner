@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { withDatabase, initializeDatabase } from './database.js';
 import { isSmtpConfigured, SMTP_CONFIG } from './config.js';
+import { v4 as uuidv4 } from 'uuid';
 
 // ES Module-Fix für __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -130,31 +131,39 @@ router.post('/api/checkin', async (req, res) => {
   try {
     console.log('Check-in API aufgerufen mit:', req.body);
     
-    const checkInData = req.body;
-    const result = await withDatabase(async (conn) => {
+    // UUID für Check-in generieren
+    const checkInId = uuidv4();
+    console.log(`UUID für Check-in generiert: ${checkInId}`);
+    
+    await withDatabase(async (connection) => {
+      console.log('Datenbankverbindung für Speichern eines Check-ins hergestellt');
+      
+      // Check-in-Daten in Datenbank speichern
       const params = [
-        checkInData.id,
-        checkInData.firstName,
-        checkInData.lastName,
-        checkInData.company,
-        checkInData.visitReason,
-        checkInData.visitDate,
-        checkInData.visitTime,
-        checkInData.acceptedRules ? 1 : 0,
-        JSON.stringify(checkInData.acceptedDocuments || []),
-        checkInData.timestamp || new Date().toISOString(),
-        checkInData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-        checkInData.pdfData || null
+        checkInId,  // UUID anstatt undefined
+        req.body.firstName,
+        req.body.lastName,
+        req.body.company,
+        req.body.visitReason,
+        req.body.visitDate,
+        req.body.visitTime,
+        req.body.acceptedRules ? 1 : 0,
+        JSON.stringify(req.body.acceptedDocuments || []),
+        req.body.timestamp,
+        'UTC', // Zeitzone
+        null   // PDF-Daten werden später generiert
       ];
       
       console.log('SQL-Parameter für Check-in:', params);
       
-      await conn.query(
-        'INSERT INTO checkins (id, firstName, lastName, company, visitReason, visitDate, visitTime, acceptedRules, acceptedDocuments, timestamp, timezone, pdfData) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      // SQL-Abfrage ausführen
+      await connection.query(
+        `INSERT INTO checkins (id, firstName, lastName, company, visitReason, visitDate, visitTime, acceptedRules, acceptedDocuments, timestamp, timezone, pdfData) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         params
       );
       
-      return { success: true, id: checkInData.id };
+      return { success: true, id: checkInId };
     }, 'Speichern eines Check-ins');
     
     res.json({
@@ -238,46 +247,29 @@ router.post('/api/company-settings', async (req, res) => {
   try {
     console.log('Update der Unternehmenseinstellungen:', req.body);
     
-    const settingsData = req.body;
-    const result = await withDatabase(async (conn) => {
-      // Prüfen, ob Einstellungen bereits existieren
-      const [existingSettings] = await conn.query('SELECT * FROM company_settings WHERE id = ?', [settingsData.id || '1']);
-      
-      if (existingSettings.length > 0) {
-        // Update vorhandener Einstellungen
-        await conn.query(
-          'UPDATE company_settings SET address = ?, logo = ?, name = ?, updatedAt = ? WHERE id = ?',
-          [
-            settingsData.address,
-            settingsData.logo,
-            settingsData.name || 'Mein Unternehmen',
-            new Date().toISOString(),
-            settingsData.id || '1'
-          ]
-        );
-      } else {
-        // Neue Einstellungen einfügen
-        await conn.query(
-          'INSERT INTO company_settings (id, name, address, logo, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)',
-          [
-            settingsData.id || '1',
-            settingsData.name || 'Mein Unternehmen',
-            settingsData.address,
-            settingsData.logo,
-            new Date().toISOString(),
-            new Date().toISOString()
-          ]
-        );
-      }
-      
-      return { success: true, id: settingsData.id || '1' };
-    }, 'Aktualisieren der Unternehmenseinstellungen');
+    // Starte Aktualisieren der Unternehmenseinstellungen
+    console.log('Starte Aktualisieren der Unternehmenseinstellungen');
     
-    res.json({
-      success: true,
-      message: 'Unternehmenseinstellungen erfolgreich aktualisiert',
-      data: result
+    await withDatabase(async (connection) => {
+      // Entferne 'name' aus dem UPDATE-Statement, wenn es nicht in der Tabelle existiert
+      await connection.query(
+        `UPDATE company_settings SET 
+         address = ?, 
+         logo = ?, 
+         updatedAt = ? 
+         WHERE id = ?`,
+        [
+          req.body.address || '',
+          req.body.logo || '',
+          new Date().toISOString(),
+          req.body.id
+        ]
+      );
+      
+      console.log('Unternehmenseinstellungen erfolgreich aktualisiert');
     });
+    
+    res.status(200).json({ success: true });
   } catch (error) {
     console.error('Fehler beim Aktualisieren der Unternehmenseinstellungen:', error);
     res.status(500).json({ 

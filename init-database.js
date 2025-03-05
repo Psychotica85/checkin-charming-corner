@@ -1,4 +1,3 @@
-
 /**
  * Initialisierungs-Skript für die Datenbank
  * Dieses Skript wird beim Start der Anwendung ausgeführt, 
@@ -24,42 +23,37 @@ const dbName = process.env.DB_NAME || 'checkin_db';
 
 // Hauptfunktion zur Datenbankinitialisierung
 async function initializeDatabase() {
-  console.log('=== Datenbank-Initialisierung gestartet ===');
-  console.log(`Datenbankeinstellungen:
-    Host: ${dbConfig.host}
-    Port: ${dbConfig.port}
-    Benutzer: ${dbConfig.user}
-    Datenbank: ${process.env.DB_NAME || 'checkin_db'}
-  `);
+  console.log('=== Besucher Check-In System: Datenbank-Initialisierung ===');
+  console.log('Verbinde mit MySQL-Server...');
   
   let connection;
-  let initialDb;
   
   try {
-    // Verbindung zum MySQL-Server herstellen (ohne Datenbankauswahl)
-    initialDb = await mysql.createConnection({
+    // Verbindung ohne Datenbank herstellen (um die Datenbank zu erstellen)
+    connection = await mysql.createConnection({
       host: dbConfig.host,
       port: dbConfig.port,
       user: dbConfig.user,
-      password: dbConfig.password
+      password: dbConfig.password,
+      ssl: dbConfig.ssl
     });
     
     console.log(`Verbindung zum MySQL-Server hergestellt: ${dbConfig.host}:${dbConfig.port}`);
     
     // Datenbank erstellen, falls sie nicht existiert
-    await initialDb.query(`CREATE DATABASE IF NOT EXISTS ${dbName} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-    console.log(`Datenbank '${dbName}' überprüft/erstellt`);
+    console.log(`Lösche Datenbank '${dbName}', falls sie existiert...`);
+    await connection.query(`DROP DATABASE IF EXISTS ${dbName}`);
     
-    // Verbindung zur Datenbank schließen
-    await initialDb.end();
+    // Datenbank neu erstellen
+    await connection.query(`CREATE DATABASE ${dbName} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    console.log(`Datenbank '${dbName}' neu erstellt`);
     
-    // Neue Verbindung mit ausgewählter Datenbank
-    connection = await mysql.createConnection({
-      ...dbConfig,
-      database: dbName
-    });
+    // Datenbank auswählen
+    await connection.query(`USE ${dbName}`);
     
     // Tabellen erstellen
+    console.log('Erstelle Tabellen...');
+    
     await connection.query(`
       CREATE TABLE IF NOT EXISTS checkins (
         id VARCHAR(36) PRIMARY KEY,
@@ -95,10 +89,11 @@ async function initializeDatabase() {
     await connection.query(`
       CREATE TABLE IF NOT EXISTS company_settings (
         id VARCHAR(36) PRIMARY KEY,
+        name VARCHAR(200) NOT NULL DEFAULT 'Mein Unternehmen',
         address TEXT,
         logo LONGTEXT,
-        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        createdAt DATETIME NOT NULL,
+        updatedAt DATETIME NOT NULL,
         INDEX idx_updatedAt (updatedAt)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
@@ -116,6 +111,7 @@ async function initializeDatabase() {
       console.log("Standard-Unternehmenseinstellungen eingefügt");
     }
     
+    console.log('Datenbankinitialisierung erfolgreich abgeschlossen!');
     console.log('=== Datenbank-Initialisierung erfolgreich abgeschlossen ===');
     return true;
   } catch (error) {
@@ -123,7 +119,6 @@ async function initializeDatabase() {
     return false;
   } finally {
     if (connection) await connection.end();
-    if (initialDb && initialDb.end) await initialDb.end();
   }
 }
 
