@@ -138,6 +138,8 @@ router.post('/api/checkin', async (req, res) => {
     // Starte Speichern eines Check-ins
     console.log('Starte Speichern eines Check-ins');
     
+    let pdfUrl = null; // Variable für die PDF-URL initialisieren
+    
     await withDatabase(async (connection) => {
       console.log('Datenbankverbindung für Speichern eines Check-ins hergestellt');
       
@@ -149,7 +151,7 @@ router.post('/api/checkin', async (req, res) => {
         checkInId,
         req.body.firstName,
         req.body.lastName,
-        fullName,              // Hier wird fullName explizit übergeben
+        fullName,
         req.body.company,
         req.body.visitReason,
         req.body.visitDate,
@@ -157,8 +159,8 @@ router.post('/api/checkin', async (req, res) => {
         req.body.acceptedRules ? 1 : 0,
         JSON.stringify(req.body.acceptedDocuments || []),
         req.body.timestamp,
-        'UTC',                 // Zeitzone
-        null                   // PDF-Daten werden später generiert
+        'UTC',
+        null
       ];
       
       console.log('SQL-Parameter für Check-in:', params);
@@ -175,19 +177,26 @@ router.post('/api/checkin', async (req, res) => {
       
       console.log(`Check-in mit ID ${checkInId} erfolgreich gespeichert`);
       
-      return { success: true, id: checkInId };
-    }, 'Speichern eines Check-ins');
+      // Optional: Hier PDF-Generierung und weitere Verarbeitung
+      // Wenn du eine PDF-URL hast, speichere sie in der Variable pdfUrl
+      // pdfUrl = 'http://example.com/pdf/' + checkInId;
+    });
     
-    res.json({
+    console.log('Speichern eines Check-ins erfolgreich abgeschlossen');
+    
+    // Antwort senden - mit dem richtigen Format
+    res.status(200).json({
       success: true,
       message: 'Check-in erfolgreich gespeichert',
-      data: result
+      checkInId: checkInId,
+      reportUrl: pdfUrl // Hier die PDF-URL zurückgeben, falls vorhanden
     });
+    
   } catch (error) {
-    console.error('Fehler beim Speichern des Check-ins:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: `Fehler beim Speichern des Check-ins: ${error.message}` 
+    console.error('Fehler bei Speichern eines Check-ins:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Fehler beim Speichern des Check-ins: ' + error.message
     });
   }
 });
