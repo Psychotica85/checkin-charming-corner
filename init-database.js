@@ -7,13 +7,6 @@
  */
 
 import mysql from 'mysql2/promise';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Pfad-Konfiguration
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Datenbank-Konfiguration
 const dbConfig = {
@@ -26,6 +19,9 @@ const dbConfig = {
   queueLimit: 0,
   ssl: false
 };
+
+// Datenbankname
+const dbName = process.env.DB_NAME || 'checkin_db';
 
 // Hauptfunktion zur Datenbankinitialisierung
 async function initializeDatabase() {
@@ -47,7 +43,6 @@ async function initializeDatabase() {
     console.log(`Verbindung zum MySQL-Server hergestellt: ${dbConfig.host}:${dbConfig.port}`);
     
     // Datenbank erstellen, falls sie nicht existiert
-    const dbName = process.env.DB_NAME || 'checkin_db';
     await connection.query(`CREATE DATABASE IF NOT EXISTS ${dbName} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
     console.log(`Datenbank '${dbName}' überprüft/erstellt`);
     
@@ -63,7 +58,6 @@ async function initializeDatabase() {
         id VARCHAR(36) PRIMARY KEY,
         firstName VARCHAR(100) NOT NULL,
         lastName VARCHAR(100) NOT NULL,
-        fullName VARCHAR(200) GENERATED ALWAYS AS (CONCAT(firstName, ' ', lastName)) VIRTUAL,
         company VARCHAR(100) NOT NULL,
         visitReason TEXT NOT NULL,
         visitDate DATE NOT NULL,
@@ -99,8 +93,8 @@ async function initializeDatabase() {
         name VARCHAR(200) NOT NULL DEFAULT 'Mein Unternehmen',
         address TEXT,
         logo LONGTEXT,
-        createdAt DATETIME NOT NULL,
-        updatedAt DATETIME NOT NULL,
+        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_updatedAt (updatedAt)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);

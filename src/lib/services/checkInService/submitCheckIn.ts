@@ -1,3 +1,4 @@
+
 // Node-Typen
 declare const process: {
   env: {
@@ -90,37 +91,61 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
       async (conn) => {
         console.log("Speichere Check-in in MySQL");
         
+        // Generiere eine eindeutige ID für den Check-in
+        const checkInId = `checkin-${Date.now()}`;
+        console.log("Generierte ID für Check-in:", checkInId);
+        
         // CheckIn-Daten vorbereiten
         const checkInData = {
-          id: Date.now().toString(),
-          ...data,
-          timezone: 'Europe/Berlin',
-          timestamp: berlinTimestamp,
+          id: checkInId,
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          company: data.company,
+          visitReason: data.visitReason || '',
+          visitDate: data.visitDate,
+          visitTime: data.visitTime || '',
+          acceptedRules: data.acceptedRules ? 1 : 0,
           acceptedDocuments: JSON.stringify(data.acceptedDocuments || []),
+          timestamp: berlinTimestamp,
+          timezone: 'Europe/Berlin',
           pdfData: pdfBase64
         };
+        
+        console.log("SQL-Parameter für Check-in:", [
+          checkInData.id,
+          checkInData.firstName,
+          checkInData.lastName,
+          checkInData.company,
+          checkInData.visitReason,
+          checkInData.visitDate ? new Date(checkInData.visitDate).toISOString().split('T')[0] : null,
+          checkInData.visitTime,
+          checkInData.acceptedRules,
+          checkInData.acceptedDocuments,
+          checkInData.timestamp,
+          checkInData.timezone,
+          checkInData.pdfData
+        ]);
         
         // In MySQL-Datenbank speichern
         await conn.query(`
           INSERT INTO checkins (
-            id, firstName, lastName, fullName, company, 
+            id, firstName, lastName, company, 
             visitReason, visitDate, visitTime, acceptedRules, 
             acceptedDocuments, timestamp, timezone, pdfData
           ) VALUES (
-            ?, ?, ?, ?, ?, 
+            ?, ?, ?, ?, 
             ?, ?, ?, ?, 
             ?, ?, ?, ?
           )
         `, [
           checkInData.id,
-          checkInData.firstName || null,
-          checkInData.lastName || null,
-          checkInData.fullName,
+          checkInData.firstName,
+          checkInData.lastName,
           checkInData.company,
-          checkInData.visitReason || null,
-          checkInData.visitDate ? new Date(checkInData.visitDate).toISOString() : null,
-          checkInData.visitTime || null,
-          checkInData.acceptedRules ? 1 : 0,
+          checkInData.visitReason,
+          checkInData.visitDate ? new Date(checkInData.visitDate).toISOString().split('T')[0] : null,
+          checkInData.visitTime,
+          checkInData.acceptedRules,
           checkInData.acceptedDocuments,
           checkInData.timestamp,
           checkInData.timezone,
