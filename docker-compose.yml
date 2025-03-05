@@ -49,7 +49,7 @@ services:
     # Ältere, stabilere Version verwenden
     image: mysql:8.0
     # Vereinfachte Konfiguration ohne problematische Parameter
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --bind-address=0.0.0.0
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
