@@ -1,3 +1,9 @@
+// Node-Typen
+declare const process: {
+  env: {
+    [key: string]: string | undefined;
+  };
+};
 
 import { formatInTimeZone } from 'date-fns-tz';
 import { CheckIn } from '@/lib/database/models';
@@ -123,8 +129,17 @@ export const submitCheckIn = async (data: CheckIn): Promise<{ success: boolean, 
         
         console.log("Datenbankoperation erfolgreich");
         
-        // URL für PDF-Vorschau erstellen
-        const pdfUrl = URL.createObjectURL(pdfBlob);
+        // URL für PDF-Vorschau erstellen - nur im Browser-Kontext
+        const isBrowser = typeof window !== 'undefined';
+        let pdfUrl = '';
+        if (isBrowser) {
+          try {
+            pdfUrl = URL.createObjectURL(pdfBlob);
+            console.log("PDF-URL für Browservorschau erstellt:", pdfUrl);
+          } catch (urlError) {
+            console.error("Fehler beim Erstellen der PDF-URL:", urlError);
+          }
+        }
         
         // E-Mail-Status in der Rückmeldung angeben
         const emailStatus = emailSent

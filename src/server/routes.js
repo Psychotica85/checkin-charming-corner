@@ -1,4 +1,3 @@
-
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -122,6 +121,246 @@ router.get('/api/test-db', async (req, res) => {
       message: 'Datenbanktest fehlgeschlagen',
       error: error.message,
       stack: error.stack
+    });
+  }
+});
+
+// API-Route für Check-In-Operationen
+router.post('/api/checkin', async (req, res) => {
+  try {
+    console.log('Check-in API aufgerufen mit:', req.body);
+    
+    const checkInData = req.body;
+    const result = await withDatabase(async (conn) => {
+      const params = [
+        checkInData.id,
+        checkInData.firstName,
+        checkInData.lastName,
+        checkInData.company,
+        checkInData.visitReason,
+        checkInData.visitDate,
+        checkInData.visitTime,
+        checkInData.acceptedRules ? 1 : 0,
+        JSON.stringify(checkInData.acceptedDocuments || []),
+        checkInData.timestamp || new Date().toISOString(),
+        checkInData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+        checkInData.pdfData || null
+      ];
+      
+      console.log('SQL-Parameter für Check-in:', params);
+      
+      await conn.query(
+        'INSERT INTO checkins (id, firstName, lastName, company, visitReason, visitDate, visitTime, acceptedRules, acceptedDocuments, timestamp, timezone, pdfData) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        params
+      );
+      
+      return { success: true, id: checkInData.id };
+    }, 'Speichern eines Check-ins');
+    
+    res.json({
+      success: true,
+      message: 'Check-in erfolgreich gespeichert',
+      data: result
+    });
+  } catch (error) {
+    console.error('Fehler beim Speichern des Check-ins:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: `Fehler beim Speichern des Check-ins: ${error.message}` 
+    });
+  }
+});
+
+router.get('/api/checkins', async (req, res) => {
+  try {
+    console.log('Abrufen aller Check-ins');
+    
+    const checkins = await withDatabase(async (conn) => {
+      const [rows] = await conn.query('SELECT * FROM checkins ORDER BY timestamp DESC');
+      return rows;
+    }, 'Abrufen aller Check-ins');
+    
+    res.json(checkins);
+  } catch (error) {
+    console.error('Fehler beim Abrufen der Check-ins:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: `Fehler beim Abrufen der Check-ins: ${error.message}` 
+    });
+  }
+});
+
+router.delete('/api/checkin/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(`Lösche Check-in mit ID: ${id}`);
+    
+    const result = await withDatabase(async (conn) => {
+      await conn.query('DELETE FROM checkins WHERE id = ?', [id]);
+      return { success: true, id };
+    }, 'Löschen eines Check-ins');
+    
+    res.json({
+      success: true,
+      message: 'Check-in erfolgreich gelöscht',
+      data: result
+    });
+  } catch (error) {
+    console.error('Fehler beim Löschen des Check-ins:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: `Fehler beim Löschen des Check-ins: ${error.message}` 
+    });
+  }
+});
+
+// API-Route für Unternehmenseinstellungen
+router.get('/api/company-settings', async (req, res) => {
+  try {
+    console.log('Abrufen der Unternehmenseinstellungen');
+    
+    const settings = await withDatabase(async (conn) => {
+      const [rows] = await conn.query('SELECT * FROM company_settings LIMIT 1');
+      return rows[0] || null;
+    }, 'Abrufen der Unternehmenseinstellungen');
+    
+    res.json(settings);
+  } catch (error) {
+    console.error('Fehler beim Abrufen der Unternehmenseinstellungen:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: `Fehler beim Abrufen der Unternehmenseinstellungen: ${error.message}` 
+    });
+  }
+});
+
+router.post('/api/company-settings', async (req, res) => {
+  try {
+    console.log('Update der Unternehmenseinstellungen:', req.body);
+    
+    const settingsData = req.body;
+    const result = await withDatabase(async (conn) => {
+      // Prüfen, ob Einstellungen bereits existieren
+      const [existingSettings] = await conn.query('SELECT * FROM company_settings WHERE id = ?', [settingsData.id || '1']);
+      
+      if (existingSettings.length > 0) {
+        // Update vorhandener Einstellungen
+        await conn.query(
+          'UPDATE company_settings SET address = ?, logo = ?, name = ?, updatedAt = ? WHERE id = ?',
+          [
+            settingsData.address,
+            settingsData.logo,
+            settingsData.name || 'Mein Unternehmen',
+            new Date().toISOString(),
+            settingsData.id || '1'
+          ]
+        );
+      } else {
+        // Neue Einstellungen einfügen
+        await conn.query(
+          'INSERT INTO company_settings (id, name, address, logo, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)',
+          [
+            settingsData.id || '1',
+            settingsData.name || 'Mein Unternehmen',
+            settingsData.address,
+            settingsData.logo,
+            new Date().toISOString(),
+            new Date().toISOString()
+          ]
+        );
+      }
+      
+      return { success: true, id: settingsData.id || '1' };
+    }, 'Aktualisieren der Unternehmenseinstellungen');
+    
+    res.json({
+      success: true,
+      message: 'Unternehmenseinstellungen erfolgreich aktualisiert',
+      data: result
+    });
+  } catch (error) {
+    console.error('Fehler beim Aktualisieren der Unternehmenseinstellungen:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: `Fehler beim Aktualisieren der Unternehmenseinstellungen: ${error.message}` 
+    });
+  }
+});
+
+// API-Route für Dokumente
+router.get('/api/documents', async (req, res) => {
+  try {
+    console.log('Abrufen aller Dokumente');
+    
+    const documents = await withDatabase(async (conn) => {
+      const [rows] = await conn.query('SELECT * FROM documents ORDER BY createdAt DESC');
+      return rows;
+    }, 'Abrufen aller Dokumente');
+    
+    res.json(documents);
+  } catch (error) {
+    console.error('Fehler beim Abrufen der Dokumente:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: `Fehler beim Abrufen der Dokumente: ${error.message}` 
+    });
+  }
+});
+
+router.post('/api/document', async (req, res) => {
+  try {
+    console.log('Speichern eines Dokuments:', req.body.name);
+    
+    const documentData = req.body;
+    const result = await withDatabase(async (conn) => {
+      await conn.query(
+        'INSERT INTO documents (id, name, description, file, createdAt) VALUES (?, ?, ?, ?, ?)',
+        [
+          documentData.id,
+          documentData.name,
+          documentData.description,
+          documentData.file,
+          documentData.createdAt || new Date().toISOString()
+        ]
+      );
+      
+      return { success: true, id: documentData.id };
+    }, 'Speichern eines Dokuments');
+    
+    res.json({
+      success: true,
+      message: 'Dokument erfolgreich gespeichert',
+      data: result
+    });
+  } catch (error) {
+    console.error('Fehler beim Speichern des Dokuments:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: `Fehler beim Speichern des Dokuments: ${error.message}` 
+    });
+  }
+});
+
+router.delete('/api/document/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(`Lösche Dokument mit ID: ${id}`);
+    
+    const result = await withDatabase(async (conn) => {
+      await conn.query('DELETE FROM documents WHERE id = ?', [id]);
+      return { success: true, id };
+    }, 'Löschen eines Dokuments');
+    
+    res.json({
+      success: true,
+      message: 'Dokument erfolgreich gelöscht',
+      data: result
+    });
+  } catch (error) {
+    console.error('Fehler beim Löschen des Dokuments:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: `Fehler beim Löschen des Dokuments: ${error.message}` 
     });
   }
 });

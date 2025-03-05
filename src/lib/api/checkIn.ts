@@ -1,17 +1,32 @@
-
 import { CheckIn } from "@/lib/database/models";
+import { API_BASE_URL } from "@/lib/database/connection";
 import {
   getCheckIns as checkInServiceGetCheckIns,
   deleteCheckIn as checkInServiceDeleteCheckIn,
   submitCheckIn as checkInServiceSubmitCheckIn
 } from "@/lib/services/checkInService";
 
+// Bestimmen, ob wir im Browser-Kontext sind
+const isBrowser = typeof window !== 'undefined';
+
 /**
  * Lädt alle Check-Ins
  */
 export const getCheckIns = async (): Promise<CheckIn[]> => {
   try {
-    // Direkter Aufruf des Service
+    // Im Browser: API-Aufruf
+    if (isBrowser) {
+      console.log("Rufe API für Check-ins auf");
+      const response = await fetch(`${API_BASE_URL}/api/checkins`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP-Fehler: ${response.status}`);
+      }
+      
+      return await response.json();
+    }
+    
+    // Im Server-Kontext: direkter Aufruf des Service
     return await checkInServiceGetCheckIns();
   } catch (error) {
     console.error("API error - getCheckIns:", error);
@@ -26,10 +41,25 @@ export const submitCheckIn = async (checkInData: any) => {
   try {
     console.log("submitCheckIn aufgerufen mit:", checkInData);
     
-    // Direkter Aufruf des Service
-    const result = await checkInServiceSubmitCheckIn(checkInData);
+    // Im Browser: API-Aufruf
+    if (isBrowser) {
+      const response = await fetch(`${API_BASE_URL}/api/checkin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(checkInData)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP-Fehler: ${response.status}`);
+      }
+      
+      return await response.json();
+    }
     
-    return result;
+    // Im Server-Kontext: direkter Aufruf des Service
+    return await checkInServiceSubmitCheckIn(checkInData);
   } catch (error) {
     console.error("API error - submitCheckIn:", error);
     return { success: false, message: "Fehler beim Erstellen des Check-ins" };
@@ -42,6 +72,23 @@ export const submitCheckIn = async (checkInData: any) => {
 export const updateCheckIn = async (id: string, checkInData: any) => {
   try {
     console.log(`Updating check-in ${id}:`, checkInData);
+    
+    // Im Browser: API-Aufruf
+    if (isBrowser) {
+      const response = await fetch(`${API_BASE_URL}/api/checkin/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(checkInData)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP-Fehler: ${response.status}`);
+      }
+      
+      return await response.json();
+    }
     
     // Hier würde der entsprechende Service aufgerufen werden
     // Da dieser noch nicht implementiert ist, geben wir ein Erfolgsresultat zurück
@@ -59,7 +106,20 @@ export const deleteCheckIn = async (id: string) => {
   try {
     console.log("deleteCheckIn aufgerufen mit ID:", id);
     
-    // Direkter Aufruf des Service
+    // Im Browser: API-Aufruf
+    if (isBrowser) {
+      const response = await fetch(`${API_BASE_URL}/api/checkin/${id}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP-Fehler: ${response.status}`);
+      }
+      
+      return await response.json();
+    }
+    
+    // Im Server-Kontext: direkter Aufruf des Service
     return await checkInServiceDeleteCheckIn(id);
   } catch (error) {
     console.error("API error - deleteCheckIn:", error);
