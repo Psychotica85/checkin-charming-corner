@@ -4,9 +4,9 @@ import { fileURLToPath } from 'url';
 import { withDatabase, initializeDatabase } from './database.js';
 import { isSmtpConfigured, SMTP_CONFIG } from './config.js';
 import { v4 as uuidv4 } from 'uuid';
-import { generateCheckInReport } from '../dist/lib/pdfGenerator.js';
-import { getDocuments } from '../dist/lib/services/documentService.js';
-import { sendEmailWithPDF } from '../dist/lib/services/emailService.js';
+import { generateCheckInReport } from '../lib/pdfGenerator.js';
+import { getDocuments } from '../lib/services/documentService.js';
+import { sendEmailWithPDF } from '../lib/services/emailService.js';
 import { saveCheckIn } from '../lib/services/checkInService';
 import { getConfig } from '../lib/api/config';
 
