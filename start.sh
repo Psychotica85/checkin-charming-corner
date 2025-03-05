@@ -1,4 +1,3 @@
-
 #!/bin/sh
 
 # Bessere Debug-Ausgaben
@@ -13,8 +12,8 @@ echo "Prüfe MySQL-Verbindung..."
 max_retries=30
 retry_count=0
 
-# Verwende mysql für Datenbankverbindungsprüfung
-echo "Verwende mysql für Datenbankverbindungsprüfung"
+# Verwende konfigurierte Datenbank-Host-Adresse
+echo "Verwende $DB_HOST für Datenbankverbindungsprüfung"
 
 # Verbindungsversuch mit mysql
 until [ $retry_count -eq $max_retries ] || (mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD" -e "SELECT 1" >/dev/null 2>&1); do
