@@ -8,6 +8,9 @@ export const SMTP_FROM = import.meta.env.VITE_SMTP_FROM || 'checkin@example.com'
 export const SMTP_TO = import.meta.env.VITE_SMTP_TO || 'empfang@example.com';
 export const SMTP_SUBJECT = import.meta.env.VITE_SMTP_SUBJECT || 'Neuer Besucher Check-In';
 
+// Erkennung, ob wir im Browser oder auf dem Server laufen
+export const isBrowser = typeof window !== 'undefined';
+
 // Standard-Einstellungen für das Unternehmen
 export const DEFAULT_COMPANY_SETTINGS = {
   id: '1',

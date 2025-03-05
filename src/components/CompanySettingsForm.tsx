@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { getCompanySettings, updateCompanySettings } from "@/lib/api";
 import { CompanySettings } from "@/lib/database/models";
-import { isBrowser } from "@/lib/database/connection";
+import { isBrowser } from "@/lib/api/config";
 
 const MAX_LOGO_SIZE = 2 * 1024 * 1024; // 2MB in bytes
 
