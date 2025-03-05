@@ -10,7 +10,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
       
-      # Umgebungsvariablen für Vite
+      # Umgebungsvariablen für Vite und Datenbank
       - VITE_ADMIN_USERNAME=admin
       - VITE_ADMIN_PASSWORD=admin
       - VITE_DB_HOST=mysql
@@ -19,7 +19,14 @@ services:
       - VITE_DB_PASSWORD=checkin
       - VITE_DB_NAME=checkin_db
       
-      # SMTP-Konfiguration für E-Mail-Versand
+      # Datenbank-Konfiguration (für Server-Seite)
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=checkin
+      - DB_PASSWORD=checkin
+      - DB_NAME=checkin_db
+      
+      # SMTP-Konfiguration (wenn nötig)
       - VITE_SMTP_HOST=smtp.example.com
       - VITE_SMTP_PORT=587
       - VITE_SMTP_USER=user@example.com
@@ -27,13 +34,6 @@ services:
       - VITE_SMTP_FROM=noreply@example.com
       - VITE_SMTP_TO=recipient@example.com
       - VITE_SMTP_SUBJECT="Neuer Besucher Check-In"
-      
-      # Datenbank-Konfiguration (für Server-Seite)
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USER=checkin
-      - DB_PASSWORD=checkin
-      - DB_NAME=checkin_db
     depends_on:
       - mysql
     restart: unless-stopped
@@ -47,7 +47,7 @@ services:
 
   mysql:
     image: mysql:8.3
-    command: --authentication-policy=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --set-variable host_cache_size=0 --ssl=0 --disable-ssl
+    command: --authentication-policy=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --ssl=0 --disable-ssl
     restart: always
     environment:
       - MYSQL_ROOT_PASSWORD=root
@@ -60,12 +60,11 @@ services:
       - mysql_data:/var/lib/mysql
       - ./mysql-config:/etc/mysql/conf.d
     healthcheck:
-      # Verbesserten Healthcheck verwenden
       test: mysqladmin ping -h localhost -u checkin -pcheckin
       interval: 20s
       timeout: 10s
       retries: 10
-      start_period: 60s # Mehr Zeit für die initiale Einrichtung geben
+      start_period: 60s
 
 volumes:
   mysql_data:
